@@ -389,3 +389,48 @@ local workerは今後:
 private scheduler repositoryへ返します。1080x1920の完成masterはMacローカルに保持し、Git履歴を動画masterで肥大化させません。
 
 これにより外部動画ツールを決める前でも、GitHub queueから「確定台本→完成Reel→Human Gate用レビュー」まで通せます。
+
+## Phase 5 — worker hardening
+
+GitHub queue → Mac worker → Reel → GitHub review proxy の往復確認後、運用耐性を追加。
+
+### Narration headroom
+
+Irodori出力がfull-scale付近の場合、Reel制作前にPCM WAVへ安全マージンを自動適用する。
+
+Default target peak:
+
+    29000 / 32767
+
+QAは今後:
+- peak = 32767 → FAIL (narration-clipping)
+- peak >= 30000 → warning (narration-low-headroom)
+- target peak以下 → audio headroom warningなし
+
+これにより、今回確認された narration-near-clipping を通常運用から除去する。
+
+### 常駐worker
+
+一度だけ:
+
+    make install-reel-worker
+
+状態確認:
+
+    make worker-status
+
+正常なら:
+- installed: yes
+- launchd: loaded
+- interval: 60s
+
+となる。
+
+以後は手動の make worker-once を原則不要にし、Macへログイン中は60秒ごとにprivate GitHub queueを確認する。
+
+ログ:
+
+    ~/Library/Logs/shunri-reel-worker.log
+    ~/Library/Logs/shunri-reel-worker-error.log
+
+render_reel のresultには qaWarnings も返す。
