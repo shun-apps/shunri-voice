@@ -20,6 +20,7 @@ MOTION_MANIFEST = ROOT / "config" / "motion_bank.json"
 MOTION_PREP = ROOT / "scripts" / "prepare_motion_bank.py"
 LIPSYNC = ROOT / "scripts" / "lipsync_scene.py"
 QA = ROOT / "scripts" / "qa_reel.py"
+AUDIO_HEADROOM = ROOT / "scripts" / "audio_headroom.py"
 CLI = ROOT / "scripts" / "shunri_cli.py"
 RENDER_IMAGE = "shunri-reel-renderer:local"
 RENDER_DOCKERFILE_DIR = ROOT / "docker" / "reel-renderer"
@@ -670,6 +671,12 @@ def main() -> int:
             "--output",
             str(narration_path),
         ],
+        cwd=ROOT,
+        check=True,
+    )
+
+    subprocess.run(
+        [sys.executable, str(AUDIO_HEADROOM), str(narration_path)],
         cwd=ROOT,
         check=True,
     )
