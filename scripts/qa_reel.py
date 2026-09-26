@@ -163,7 +163,9 @@ def main() -> int:
     if narration_stats["duration"] <= 0.1 or narration_stats["rms"] < 20:
         failures.append("silent-or-empty-narration")
     if narration_stats["peak"] >= 32767:
-        warnings.append("narration-near-clipping")
+        failures.append("narration-clipping")
+    elif narration_stats["peak"] >= 30000:
+        warnings.append("narration-low-headroom")
 
     format_duration = float(probe.get("format", {}).get("duration") or 0)
     checks["videoDuration"] = round(format_duration, 3)
