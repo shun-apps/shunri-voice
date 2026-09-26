@@ -340,6 +340,7 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "qaAsset": (asset_dir_rel / "qa-report.json").as_posix(),
         "captionsAsset": (asset_dir_rel / "captions.ass").as_posix(),
         "qaPassed": True,
+        "qaWarnings": qa.get("warnings", []),
         "durationSeconds": round(wav_duration(narration_wav), 3),
         "motionBank": "production-if-complete-else-generated",
         "lipsyncBackend": str(job.get("lipsyncBackend") or "auto"),
