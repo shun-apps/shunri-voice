@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "model": "gemini-3.8-flash-tts",
+  "languageCode": "ja-JP",
+  "gender": "female",
+  "auditionStyle": "Natural conversational Japanese. Warm and intelligent, but noticeably less like a professional narrator. Brisk casual pacing, approximately 20% faster than a polished narration read. Use spontaneous-feeling phrasing, subtle breath, small natural pauses, and light youthful energy. Do not sound cute, anime-like, salesy, theatrical, or over-polished.",
+  "auditionText": "LPを作ろうと思って、Canvaを開いたんですよ。\\n気づいたら3時間。\\nまだ、ファーストビューでした。\\nAIを使っているのに、なぜか仕事が減らない。\\nそれ、AIの使い方じゃなくて、仕事の流れが変わっていないのかもしれません。",
+  "candidates": [
+    {
+      "id": "shunri-warm-younger-a",
+      "displayName": "Shunri Warm Younger A",
+      "prompt": "A Japanese woman in her late 20s with the warmth and rounded tone of Shunri Warm Guide, but younger and lighter. Natural mid voice, gentle clarity, subtle breath, approachable intelligence, and relaxed everyday conversation. Mature enough to sound credible, never cute or anime-like."
+    },
+    {
+      "id": "shunri-warm-younger-b",
+      "displayName": "Shunri Warm Younger B",
+      "prompt": "A Japanese woman around 27 with a warm clear mid-range voice, slightly brighter than Shunri Warm Guide, soft natural breath, and an easy conversational rhythm. Intelligent and friendly with a contemporary social-media feel, not a professional narrator."
+    },
+    {
+      "id": "shunri-warm-younger-c",
+      "displayName": "Shunri Warm Younger C",
+      "prompt": "A Japanese woman in her late 20s with a light warm mid-low timbre, youthful freshness, clean articulation, and casual confident delivery. Human and spontaneous, with a little vocal texture and no announcer polish."
+    },
+    {
+      "id": "shunri-warm-younger-d",
+      "displayName": "Shunri Warm Younger D",
+      "prompt": "A Japanese woman around 26 to 28 with a soft warm voice, slightly airy texture, natural breath, and a lively but restrained conversational cadence. Smart, modern, friendly, and believable; avoid girlish cuteness, anime tone, and commercial narration."
+    },
+    {
+      "id": "shunri-warm-younger-e",
+      "displayName": "Shunri Warm Younger E",
+      "prompt": "A Japanese woman in her late 20s with a warm lightly husky mid voice, relaxed youthful energy, subtle grain, and intimate everyday pacing. She sounds like a smart colleague speaking naturally rather than a voice actor or narrator."
+    }
+  ]
+}

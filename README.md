@@ -688,3 +688,17 @@ Voice Designのstored voiceにはプロジェクト上限とTTLがあるため�
 Homebrew/Python環境によっては urllib が `CERTIFICATE_VERIFY_FAILED` になる。
 その場合、Gemini candidate generatorはTLS検証を無効化せず、macOSの `curl` へ自動fallbackする。
 APIキーはcurlのコマンドライン引数へ直接載せず、一時header file（0600）経由で渡す。
+
+### Younger Warm Guide iteration
+
+`Shunri Warm Guide` を基準に、少し若い声だけを比較する第2候補セットを用意する。
+声質比較と速度比較を同時に混ぜすぎないため、このセットは全候補を同じ約1.2x相当のbrisk conversational styleで試聴する。
+
+    make gemini-voice-younger-candidates
+
+出力:
+
+    outputs/gemini-voice-younger-candidates/
+
+Gemini 3.8 TTSではpaceは speech_metadata.style で自然言語制御するため、約1.2xは演技指示であり厳密な再生倍率ではない。
+最終候補が決まった後、必要ならFFmpeg atempoで1.2x / 1.3xの厳密な比較を行う。
