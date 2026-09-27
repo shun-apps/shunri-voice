@@ -98,6 +98,27 @@ def caption_windows(path: Path) -> list[tuple[float, float]]:
     return result
 
 
+def decode_test(path: Path) -> tuple[bool, str]:
+    parent = path.parent.resolve()
+    proc = subprocess.run(
+        [
+            "docker", "run", "--rm",
+            "-v", f"{parent}:/work:ro",
+            RENDER_IMAGE,
+            "-v", "error",
+            "-i", f"/work/{path.name}",
+            "-map", "0:v:0",
+            "-map", "0:a:0?",
+            "-f", "null",
+            "-",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return proc.returncode == 0, (proc.stderr or "").strip()
+
+
 def fps_value(rate: str | None) -> float:
     if not rate or rate == "0/0":
         return 0.0
@@ -193,6 +214,13 @@ def main() -> int:
             failures.append(f"overlapping-caption-{i+1}")
     if windows and abs(windows[-1][1] - narration_stats["duration"]) > 0.45:
         warnings.append("caption-end-not-close-to-audio-end")
+
+    decode_ok, decode_error = decode_test(video)
+    checks["decodePassed"] = decode_ok
+    if decode_error:
+        checks["decodeError"] = decode_error[:500]
+    if not decode_ok:
+        failures.append("video-decode-failed")
 
     file_size = video.stat().st_size
     checks["videoBytes"] = file_size
