@@ -54,6 +54,15 @@ KEY_TERMS = (
     "CPA",
 )
 
+# Terms that deserve their own high-impact beat instead of only inline color.
+# Short acronyms such as AI / LP stay inline by default so the edit does not
+# become noisy.
+STANDALONE_KEY_TERMS = (
+    "ファーストビュー",
+    "仕事が減らない",
+    "仕事の流れ",
+)
+
 DEFAULT_ACCENT_ASS = "&H00007AFF&"  # #FF7A00 in ASS BGR order
 ENTRY_START_Y = 1692
 ENTRY_END_Y = 1670
@@ -67,6 +76,7 @@ class CaptionCue:
     display: str
     highlight: str | None
     layout_variant: str
+    kind: str = "normal"
 
 
 def _clean(text: str) -> str:
@@ -210,10 +220,43 @@ def choose_highlight(text: str) -> str | None:
     return None
 
 
+def _punctuation_only(text: str) -> bool:
+    return bool(text) and all(ch in "、。，．,.!?！？…・ " for ch in text)
+
+
+def _standalone_highlight(text: str, marker: str | None) -> bool:
+    if not marker:
+        return False
+    if marker in STANDALONE_KEY_TERMS:
+        return True
+    # Numbers with their unit are especially effective as isolated visual beats.
+    return bool(re.fullmatch(r"\d+(?:\.\d+)?(?:時間|分|秒|日|%|％|倍|円|万円|件|人)?", marker))
+
+
+def _expand_caption_unit(unit: str) -> list[tuple[str, str, str | None]]:
+    clean = _clean(unit)
+    marker = choose_highlight(clean)
+    if not marker or marker not in clean or not _standalone_highlight(clean, marker):
+        return [("normal", clean, marker)]
+
+    before, _, after = clean.partition(marker)
+    parts: list[tuple[str, str, str | None]] = []
+    if before and not _punctuation_only(before):
+        parts.append(("normal", before, choose_highlight(before)))
+
+    # The emphasis beat contains only the key term. Trailing punctuation is
+    # intentionally omitted visually; its timing is absorbed into adjacent cues.
+    parts.append(("standalone", marker, marker))
+
+    if after and not _punctuation_only(after):
+        parts.append(("normal", after, choose_highlight(after)))
+    return parts
+
+
 def build_caption_cues(
     scenes: list[dict],
     *,
-    max_unit_chars: int = 30,
+    max_unit_chars: int = 18,
     max_line_chars: int = 18,
 ) -> list[CaptionCue]:
     cues: list[CaptionCue] = []
@@ -222,25 +265,46 @@ def build_caption_cues(
         if not text:
             continue
 
-        units = split_caption_units(text, max_unit_chars=max_unit_chars)
+        units = split_caption_units(
+            text,
+            max_unit_chars=max_unit_chars,
+            min_unit_chars=4,
+        )
+        atoms: list[tuple[str, str, str | None]] = []
+        for unit in units:
+            atoms.extend(_expand_caption_unit(unit))
+
         start = float(scene["start"])
         end = float(scene["end"])
         duration = max(0.01, end - start)
-        weights = [max(3, len(_clean(unit))) for unit in units]
-        total = sum(weights)
+
+        # Standalone emphasis receives extra screen time so a short word like
+        # "3時間" does not flash too quickly to register.
+        weights = [
+            max(8, int(len(_clean(text_part)) * 1.8))
+            if kind == "standalone"
+            else max(3, len(_clean(text_part)))
+            for kind, text_part, _ in atoms
+        ]
+        total = max(1, sum(weights))
         cursor = start
 
-        for index, (unit, weight) in enumerate(zip(units, weights)):
-            cue_end = end if index == len(units) - 1 else cursor + duration * weight / total
-            display = balanced_lines(unit, max_line_chars=max_line_chars)
+        for index, ((kind, text_part, marker), weight) in enumerate(zip(atoms, weights)):
+            cue_end = end if index == len(atoms) - 1 else cursor + duration * weight / total
+            display = (
+                _clean(text_part)
+                if kind == "standalone"
+                else balanced_lines(text_part, max_line_chars=max_line_chars)
+            )
             cues.append(
                 CaptionCue(
                     start=round(cursor, 3),
                     end=round(cue_end, 3),
-                    text=unit,
+                    text=text_part,
                     display=display,
-                    highlight=choose_highlight(unit),
+                    highlight=marker,
                     layout_variant=str(scene.get("layoutVariant") or "center"),
+                    kind=kind,
                 )
             )
             cursor = cue_end
@@ -269,12 +333,43 @@ def ass_highlight(text: str, accent_ass: str = DEFAULT_ACCENT_ASS) -> str:
     )
 
 
+def ass_standalone_emphasis(
+    text: str,
+    layout_variant: str,
+    accent_ass: str = DEFAULT_ACCENT_ASS,
+) -> str:
+    if layout_variant == "fullscreen-card":
+        position = r"\an5\move(540,1200,540,1080,0,160)"
+        font_size = 126
+    else:
+        position = r"\an2\move(540,1650,540,1515,0,160)"
+        font_size = 122
+
+    return (
+        "{"
+        + position
+        + rf"\fs{font_size}\1c{accent_ass}\3c&H00111111&\bord6\shad1\b1"
+        + r"\fscx100\fscy100"
+        + r"\t(0,110,\fscx125\fscy125)"
+        + r"\t(110,280,\fscx110\fscy110)"
+        + r"\fad(70,100)}"
+        + text
+    )
+
+
 def ass_text(
     cue: CaptionCue,
     default_style: str = "Default",
     accent_ass: str = DEFAULT_ACCENT_ASS,
 ) -> str:
     display = cue.display
+    if cue.kind == "standalone":
+        return ass_standalone_emphasis(
+            display,
+            cue.layout_variant,
+            accent_ass=accent_ass,
+        )
+
     prefix = ass_entry_prefix(cue.layout_variant)
 
     if not cue.highlight or cue.highlight not in display.replace(r"\N", ""):

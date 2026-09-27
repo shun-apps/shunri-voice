@@ -29,10 +29,19 @@ def main() -> int:
         },
         {
             "id": "s02",
-            "type": "cta",
+            "type": "talk",
             "caption": "気づいたら3時間。",
             "start": 2.0,
             "end": 3.0,
+            "cameraMotion": "punch-in",
+            "layoutVariant": "center",
+        },
+        {
+            "id": "s03",
+            "type": "cta",
+            "caption": "AIを使っているのに、まだ時間がかかる。",
+            "start": 3.0,
+            "end": 4.5,
             "cameraMotion": "cta-push",
             "layoutVariant": "center",
         },
@@ -45,13 +54,25 @@ def main() -> int:
         assert len(lines) <= 2
         assert all(len(line) <= 18 for line in lines)
 
-    emphasized = next(cue for cue in cues if cue.highlight)
-    rendered = ass_text(emphasized)
+    standalone = next(cue for cue in cues if cue.kind == "standalone")
+    assert standalone.display in {"仕事の流れ", "3時間"}
+    assert r"\N" not in standalone.display
+    rendered = ass_text(standalone)
     assert r"\move(" in rendered
     assert r"\fad(" in rendered
     assert r"\1c&H" in rendered
-    assert r"\t(0,90,\fscx115\fscy115)" in rendered
-    assert r"\t(90,220,\fscx100\fscy100)" in rendered
+    assert r"\fs122" in rendered or r"\fs126" in rendered
+    assert r"\t(0,110,\fscx125\fscy125)" in rendered
+    assert r"\t(110,280,\fscx110\fscy110)" in rendered
+
+    inline = next(
+        cue
+        for cue in cues
+        if cue.highlight == "AI" and cue.kind == "normal"
+    )
+    inline_rendered = ass_text(inline)
+    assert r"\t(0,90,\fscx115\fscy115)" in inline_rendered
+    assert r"\t(90,220,\fscx100\fscy100)" in inline_rendered
 
     assert "zoompan=" in camera_motion_filter("punch-in", 1.5)
     assert "1.12" in camera_motion_filter("punch-in", 1.5)
@@ -66,6 +87,9 @@ def main() -> int:
         ass.write_text(
             "Dialogue: 0,0:00:00.00,0:00:01.00,Default,,0,0,0,,"
             + rendered
+            + "\n"
+            + "Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,"
+            + inline_rendered
             + "\n",
             encoding="utf-8",
         )

@@ -296,9 +296,9 @@ def write_plan(
         "voice": "shunri",
         "durationSeconds": round(duration, 3),
         "script": script,
-        "captionEngine": "japanese-semantic-v2",
-        "captionEmphasis": "color-pop-v1",
-        "captionEntryAnimation": "fade-up-v1",
+        "captionEngine": "japanese-semantic-v3",
+        "captionEmphasis": "standalone-punch-v1",
+        "captionEntryAnimation": "micro-cue-fade-up-v1",
         "motionEngine": "editorial-camera-v2",
         "layoutEngine": "mixed-overlay-v1",
         "audioDesign": audio_design,
@@ -329,7 +329,7 @@ Style: Default,Noto Sans CJK JP,66,&H00FFFFFF,&H000000FF,&H00111111,&H7A000000,-
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
 """
     lines = [header]
-    cues = build_caption_cues(timeline, max_unit_chars=30, max_line_chars=18)
+    cues = build_caption_cues(timeline, max_unit_chars=18, max_line_chars=18)
     for cue in cues:
         start = ass_time(float(cue.start))
         end = ass_time(float(cue.end))
@@ -910,7 +910,7 @@ def main() -> int:
     if args.static_presenter:
         print("注: --static-presenter のため旧静止画モードです。")
     else:
-        print("Phase-6.2: color-pop captions / layout punch / fullscreen callout / production audio policy / QA が有効です。")
+        print("Phase-6.3: micro captions / standalone emphasis punch / layout punch / fullscreen callout / production audio policy / QA が有効です.")
         if bgm_path is None:
             print("audio: narration-only（合成BGM/SEは本番では生成しません）")
         else:

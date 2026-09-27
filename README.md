@@ -615,3 +615,37 @@ Phase 6.1のまま:
 - BGM未指定 = narration-only
 - BGM指定 = supplied/approved assetのみ
 - synthetic BGM / SEはproductionで生成しない
+
+## Phase 6.3 — micro captions / standalone emphasis
+
+Phase 6.2のeditorial motion / layout punchは維持し、字幕の「理解速度」と「強調差」をさらに上げる。
+
+### micro caption pacing
+
+- 1 cueを最大18文字へ短縮
+- 長文を1〜2行で出し続けず、意味のまとまりごとに細かく切り替える
+- scene自体は増やさず、1 scene内で複数caption cueを進める
+- speech-energy alignmentは維持し、cue内では文字量に応じて時間配分する
+
+### standalone emphasis beat
+
+以下の強い語は文章内の色替えだけで終わらせず、単独captionとして出す:
+
+- ファーストビュー
+- 仕事が減らない
+- 仕事の流れ
+- 数字 + 単位（例: 3時間 / 15分 / 2倍）
+
+短い AI / LP などは原則inline emphasisのままにして、画面が騒がしくなるのを防ぐ。
+
+standalone emphasisは通常66pxに対して約122pxを基準にし、
+
+    100% → 125% → 110%
+
+の短いpunchを入れる。fullscreen-cardでは126px基準。
+
+### QA
+
+- 旧inline color-popとPhase 6.3 standalone punchの両方を検証
+- standalone cueもentry motion / fade必須
+- make self-check で standalone / inline の両パターンを検証する
