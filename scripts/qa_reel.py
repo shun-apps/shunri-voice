@@ -119,6 +119,50 @@ def decode_test(path: Path) -> tuple[bool, str]:
     return proc.returncode == 0, (proc.stderr or "").strip()
 
 
+def caption_entries(path: Path) -> list[dict]:
+    entries: list[dict] = []
+    tag_re = re.compile(r"\{[^}]*\}")
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("Dialogue:"):
+            continue
+        parts = line.split(",", 9)
+        if len(parts) < 10:
+            continue
+        text = tag_re.sub("", parts[9])
+        entries.append({
+            "start": parse_ass_time(parts[1]),
+            "end": parse_ass_time(parts[2]),
+            "text": text,
+            "lines": text.split(r"\N"),
+        })
+    return entries
+
+
+def validate_caption_layout(entries: list[dict]) -> list[str]:
+    failures: list[str] = []
+    forbidden_line_start = tuple("、。，．,.!?！？)]}」』】〉》〕）］｝")
+    bad_suffix_start = ("ない", "いる", "です", "ます", "でした", "ません", "かもし")
+
+    for index, entry in enumerate(entries, start=1):
+        lines = entry["lines"]
+        if len(lines) > 2:
+            failures.append(f"caption-more-than-2-lines-{index}")
+            continue
+
+        if any(len(line) > 18 for line in lines):
+            failures.append(f"caption-line-too-long-{index}")
+
+        if len(lines) == 2:
+            if min(len(lines[0]), len(lines[1])) <= 3:
+                failures.append(f"caption-orphan-line-{index}")
+            if lines[1].startswith(forbidden_line_start):
+                failures.append(f"caption-kinsoku-start-{index}")
+            if lines[1].startswith(bad_suffix_start):
+                failures.append(f"caption-broken-expression-{index}")
+
+    return failures
+
+
 def fps_value(rate: str | None) -> float:
     if not rate or rate == "0/0":
         return 0.0
@@ -204,9 +248,12 @@ def main() -> int:
         failures.append("wrong-voice")
 
     windows = caption_windows(captions)
+    entries = caption_entries(captions)
     checks["captionCount"] = len(windows)
+    checks["captionLayoutEngine"] = "japanese-semantic-v2"
     if not windows:
         failures.append("missing-captions")
+    failures.extend(validate_caption_layout(entries))
     for i, (start, end) in enumerate(windows):
         if end <= start:
             failures.append(f"invalid-caption-window-{i+1}")
