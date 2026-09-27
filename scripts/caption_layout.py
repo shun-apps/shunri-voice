@@ -263,7 +263,7 @@ def ass_highlight(text: str, accent_ass: str = DEFAULT_ACCENT_ASS) -> str:
     return (
         rf"{{\1c{accent_ass}\b1\fscx100\fscy100"
         r"\t(0,90,\fscx115\fscy115)"
-        r"\t(90,220,\fscx100\fscy100)}}"
+        r"\t(90,220,\fscx100\fscy100)}"
         + text
         + r"{\1c&H00FFFFFF&\b1\fscx100\fscy100}"
     )
