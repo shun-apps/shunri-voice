@@ -186,20 +186,30 @@ def assign_motion_variants(timeline: list[dict]) -> list[dict]:
 
     camera_cycle = [
         "slow-push",
+        "punch-in",
         "drift-left",
         "punch-in",
         "drift-right",
-        "slow-push",
         "micro-drift",
+    ]
+    layout_cycle = [
+        "center",
+        "center",
+        "left-presenter",
+        "fullscreen-card",
+        "right-presenter",
+        "center",
     ]
 
     for index, scene in enumerate(timeline):
         if scene.get("type") == "cta" and "cta-forward" in variants:
             scene["presenterVariant"] = "cta-forward"
             scene["cameraMotion"] = "cta-push"
+            scene["layoutVariant"] = "center"
         else:
             scene["presenterVariant"] = regular[index % len(regular)]
             scene["cameraMotion"] = camera_cycle[index % len(camera_cycle)]
+            scene["layoutVariant"] = layout_cycle[index % len(layout_cycle)]
     return timeline
 
 
@@ -287,14 +297,23 @@ def write_plan(
         "durationSeconds": round(duration, 3),
         "script": script,
         "captionEngine": "japanese-semantic-v2",
-        "motionEngine": "editorial-camera-v1",
+        "captionEmphasis": "color-pop-v1",
+        "captionEntryAnimation": "fade-up-v1",
+        "motionEngine": "editorial-camera-v2",
+        "layoutEngine": "mixed-overlay-v1",
         "audioDesign": audio_design,
         "scenes": timeline,
     }
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
-def write_ass(path: Path, timeline: list[dict], width: int, height: int) -> None:
+def write_ass(
+    path: Path,
+    timeline: list[dict],
+    width: int,
+    height: int,
+    accent_ass: str,
+) -> None:
     header = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {width}
@@ -314,7 +333,7 @@ Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
     for cue in cues:
         start = ass_time(float(cue.start))
         end = ass_time(float(cue.end))
-        caption = ass_text(cue)
+        caption = ass_text(cue, accent_ass=accent_ass)
         lines.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{caption}\n")
     path.write_text("".join(lines), encoding="utf-8")
 
@@ -456,16 +475,16 @@ def camera_motion_filter(name: str, scene_duration: float) -> str:
     center_y = "ih/2-(ih/zoom/2)"
 
     if name == "punch-in":
-        zoom = "if(lt(on,12),1+0.004*on,1.048)"
+        zoom = "if(lt(on,10),1+0.012*on,1.12)"
         x = center_x
         y = center_y
     elif name == "drift-left":
-        zoom = "1.035"
-        x = f"(iw-iw/zoom)*(0.72-0.44*on/{frames})"
+        zoom = "1.055"
+        x = f"(iw-iw/zoom)*(0.80-0.60*on/{frames})"
         y = center_y
     elif name == "drift-right":
-        zoom = "1.035"
-        x = f"(iw-iw/zoom)*(0.28+0.44*on/{frames})"
+        zoom = "1.055"
+        x = f"(iw-iw/zoom)*(0.20+0.60*on/{frames})"
         y = center_y
     elif name == "cta-push":
         zoom = f"1+0.065*on/{frames}"
@@ -487,6 +506,84 @@ def camera_motion_filter(name: str, scene_duration: float) -> str:
     )
 
 
+def scene_visual_filter(
+    camera_motion: str,
+    scene_duration: float,
+    layout_variant: str,
+    has_overlay: bool,
+) -> str:
+    motion = camera_motion_filter(camera_motion, scene_duration)
+    out_start = max(0.10, scene_duration - 0.24)
+
+    if layout_variant == "left-presenter":
+        layout = (
+            f"[0:v]{motion},split=2[bg0][fg0];"
+            "[bg0]boxblur=24:8,eq=brightness=-0.12[bg];"
+            "[fg0]scale=760:1350:force_original_aspect_ratio=decrease[fg];"
+            "[bg][fg]overlay=40:(H-h)/2[layout]"
+        )
+    elif layout_variant == "right-presenter":
+        layout = (
+            f"[0:v]{motion},split=2[bg0][fg0];"
+            "[bg0]boxblur=24:8,eq=brightness=-0.12[bg];"
+            "[fg0]scale=760:1350:force_original_aspect_ratio=decrease[fg];"
+            "[bg][fg]overlay=W-w-40:(H-h)/2[layout]"
+        )
+    elif layout_variant == "fullscreen-card":
+        layout = (
+            f"[0:v]{motion},boxblur=18:6,eq=brightness=-0.20:saturation=0.75,"
+            "drawbox=x=55:y=165:w=970:h=1510:color=black@0.24:t=fill[layout]"
+        )
+    else:
+        layout = f"[0:v]{motion}[layout]"
+
+    if not has_overlay:
+        return layout + ";[layout]null[outv]"
+
+    if layout_variant == "fullscreen-card":
+        overlay = (
+            "[1:v]scale=900:1320:force_original_aspect_ratio=decrease,"
+            "pad=928:1348:14:14:color=white,format=rgba,"
+            "fade=t=in:st=0:d=0.18:alpha=1,"
+            f"fade=t=out:st={out_start:.3f}:d=0.22:alpha=1[ov];"
+            "[layout][ov]overlay=x=(W-w)/2:"
+            "y='if(lt(t,0.32),H-(H-250)*(t/0.32),250)'"
+            ":shortest=1[outv]"
+        )
+    elif layout_variant == "left-presenter":
+        overlay = (
+            "[1:v]scale=500:500:force_original_aspect_ratio=decrease,"
+            "pad=524:524:12:12:color=white,format=rgba,"
+            "fade=t=in:st=0:d=0.16:alpha=1,"
+            f"fade=t=out:st={out_start:.3f}:d=0.20:alpha=1[ov];"
+            "[layout][ov]overlay=x=W-w-60:"
+            "y='if(lt(t,0.28),-h+(155+h)*(t/0.28),155)'"
+            ":shortest=1[outv]"
+        )
+    elif layout_variant == "right-presenter":
+        overlay = (
+            "[1:v]scale=500:500:force_original_aspect_ratio=decrease,"
+            "pad=524:524:12:12:color=white,format=rgba,"
+            "fade=t=in:st=0:d=0.16:alpha=1,"
+            f"fade=t=out:st={out_start:.3f}:d=0.20:alpha=1[ov];"
+            "[layout][ov]overlay=x=60:"
+            "y='if(lt(t,0.28),-h+(155+h)*(t/0.28),155)'"
+            ":shortest=1[outv]"
+        )
+    else:
+        overlay = (
+            "[1:v]scale=840:620:force_original_aspect_ratio=decrease,"
+            "pad=864:644:12:12:color=white,format=rgba,"
+            "fade=t=in:st=0:d=0.18:alpha=1,"
+            f"fade=t=out:st={out_start:.3f}:d=0.22:alpha=1[ov];"
+            "[layout][ov]overlay=x=(W-w)/2:"
+            "y='if(lt(t,0.35),-h+(120+h)*(t/0.35),120)'"
+            ":shortest=1[outv]"
+        )
+
+    return layout + ";" + overlay
+
+
 def render_scene_visual(
     job_dir: Path,
     synced_name: str,
@@ -494,6 +591,7 @@ def render_scene_visual(
     scene_duration: float,
     overlay_name: str | None,
     camera_motion: str,
+    layout_variant: str,
 ) -> None:
     base = [
         "docker", "run", "--rm",
@@ -502,20 +600,16 @@ def render_scene_visual(
         "-y",
         "-i", f"/work/segments-synced/{synced_name}",
     ]
-    motion = camera_motion_filter(camera_motion, scene_duration)
 
-    if overlay_name:
-        out_start = max(0.10, scene_duration - 0.24)
-        filter_graph = (
-            f"[0:v]{motion}[base];"
-            "[1:v]scale=840:620:force_original_aspect_ratio=decrease,"
-            "pad=864:644:12:12:color=white,format=rgba,"
-            "fade=t=in:st=0:d=0.18:alpha=1,"
-            f"fade=t=out:st={out_start:.3f}:d=0.22:alpha=1[ov];"
-            "[base][ov]overlay=x=(W-w)/2:"
-            "y='if(lt(t,0.35),-h+(120+h)*(t/0.35),120)'"
-            ":shortest=1[outv]"
-        )
+    has_overlay = bool(overlay_name)
+    filter_graph = scene_visual_filter(
+        camera_motion,
+        scene_duration,
+        layout_variant,
+        has_overlay,
+    )
+
+    if has_overlay:
         cmd = base + [
             "-loop", "1",
             "-i", f"/work/overlays/{overlay_name}",
@@ -532,7 +626,8 @@ def render_scene_visual(
         ]
     else:
         cmd = base + [
-            "-vf", motion,
+            "-filter_complex", filter_graph,
+            "-map", "[outv]",
             "-t", f"{scene_duration:.3f}",
             "-an",
             "-r", "30",
@@ -544,7 +639,6 @@ def render_scene_visual(
         ]
 
     subprocess.run(cmd, check=True)
-
 
 def render_motion_track(job_dir: Path, timeline: list[dict], lipsync_backend: str) -> Path:
     segments_dir = job_dir / "segments"
@@ -610,6 +704,7 @@ def render_motion_track(job_dir: Path, timeline: list[dict], lipsync_backend: st
             scene_duration,
             str(scene.get("overlay")) if scene.get("overlay") else None,
             str(scene.get("cameraMotion") or "micro-drift"),
+            str(scene.get("layoutVariant") or "center"),
         )
         concat_lines.append(f"file '{final_name}'")
 
@@ -711,6 +806,7 @@ def main() -> int:
     profile = json.loads(CONFIG.read_text(encoding="utf-8"))
     width = int(profile["output"]["width"])
     height = int(profile["output"]["height"])
+    accent_ass = str(profile["captions"].get("accentAss") or "&H00007AFF&")
 
     output = args.output.expanduser().resolve()
     job_dir = output.parent / ".poc-work"
@@ -756,7 +852,7 @@ def main() -> int:
     bgm_path = prepare_bgm(job_dir, args.bgm)
     audio_design = "asset-bgm-v1" if bgm_path is not None else "narration-only-v1"
     write_plan(plan_path, script, duration, timeline, audio_design)
-    write_ass(ass_path, timeline, width, height)
+    write_ass(ass_path, timeline, width, height, accent_ass)
 
     print("[3/4] Reel renderer 準備")
     ensure_renderer_image(args.skip_build)
@@ -814,7 +910,7 @@ def main() -> int:
     if args.static_presenter:
         print("注: --static-presenter のため旧静止画モードです。")
     else:
-        print("Phase-6.1: semantic captions / editorial motion / animated overlays / production audio policy / QA が有効です。")
+        print("Phase-6.2: color-pop captions / layout punch / fullscreen callout / production audio policy / QA が有効です。")
         if bgm_path is None:
             print("audio: narration-only（合成BGM/SEは本番では生成しません）")
         else:
