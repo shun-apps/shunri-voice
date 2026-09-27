@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "model": "gemini-3.8-flash-tts",
+  "languageCode": "ja-JP",
+  "gender": "female",
+  "auditionStyle": "Natural conversational Japanese. Intelligent and warm, restrained rather than announcer-like. Keep the delivery human, with subtle breath and small pauses. Do not overact.",
+  "auditionText": "LPを作ろうと思って、Canvaを開いたんですよ。\\n気づいたら3時間。\\nまだ、ファーストビューでした。\\nAIを使っているのに、なぜか仕事が減らない。\\nそれ、AIの使い方じゃなくて、仕事の流れが変わっていないのかもしれません。",
+  "candidates": [
+    {
+      "id": "shunri-core",
+      "displayName": "Shunri Core",
+      "prompt": "A Japanese woman in her early 30s with a calm low-to-mid register, clear articulation, warm intelligence, and an understated conversational cadence. Slightly dry and self-aware rather than cute, theatrical, or announcer-like."
+    },
+    {
+      "id": "shunri-editorial",
+      "displayName": "Shunri Editorial",
+      "prompt": "A sophisticated Japanese woman around 30 with a slightly low, subtly smoky timbre, crisp diction, measured pacing, and quiet confidence. Modern editorial polish without sounding like a commercial narrator."
+    },
+    {
+      "id": "shunri-warm-guide",
+      "displayName": "Shunri Warm Guide",
+      "prompt": "A Japanese woman in her early 30s with a warm rounded mid-low voice, natural breath, gentle clarity, and an approachable intelligent cadence. Friendly and human, but never sugary, anime-like, or overly bright."
+    },
+    {
+      "id": "shunri-strategist",
+      "displayName": "Shunri Strategist",
+      "prompt": "A Japanese woman in her early 30s with a lean clear low-to-mid voice, precise diction, slightly quicker controlled cadence, and subtle strategic confidence. Calm, sharp, modern, and conversational rather than formal."
+    },
+    {
+      "id": "shunri-human-texture",
+      "displayName": "Shunri Human Texture",
+      "prompt": "A Japanese woman around 30 with a soft slightly husky low-mid timbre, faint vocal grain, relaxed natural breathing, and intimate conversational timing. Restrained and believable, with small human imperfections rather than glossy announcer polish."
+    }
+  ]
+}
