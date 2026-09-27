@@ -55,8 +55,8 @@ def main() -> int:
 
     assert "zoompan=" in camera_motion_filter("punch-in", 1.5)
     assert "1.12" in camera_motion_filter("punch-in", 1.5)
-    assert "overlay=W-w-40" in scene_visual_filter("drift-left", 2.0, "left-presenter", False)
-    assert "overlay=40" in scene_visual_filter("drift-right", 2.0, "right-presenter", False)
+    assert "overlay=40" in scene_visual_filter("drift-left", 2.0, "left-presenter", False)
+    assert "overlay=W-w-40" in scene_visual_filter("drift-right", 2.0, "right-presenter", False)
     full = scene_visual_filter("punch-in", 2.0, "fullscreen-card", True)
     assert "drawbox=" in full
     assert "scale=900:1320" in full
