@@ -41,11 +41,17 @@ type CaptionBeatProps = {
   text: string;
   accentHex: string;
   hero: boolean;
+  durationInFrames: number;
 };
 
-export const CaptionBeat: React.FC<CaptionBeatProps> = ({text, accentHex, hero}) => {
+export const CaptionBeat: React.FC<CaptionBeatProps> = ({
+  text,
+  accentHex,
+  hero,
+  durationInFrames,
+}) => {
   const frame = useCurrentFrame();
-  const {fps, durationInFrames} = useVideoConfig();
+  const {fps} = useVideoConfig();
   const enter = spring({
     fps,
     frame,
