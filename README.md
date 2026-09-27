@@ -682,3 +682,9 @@ APIキーはGitHubへ保存しない。Google AI StudioでAPIキーを発行し�
     python3 scripts/gemini_voice_candidates.py --force-new
 
 Voice Designのstored voiceにはプロジェクト上限とTTLがあるため、voice_idだけではなく設計promptをcanonicalとして保持する。
+
+### macOS Python CA fallback
+
+Homebrew/Python環境によっては urllib が `CERTIFICATE_VERIFY_FAILED` になる。
+その場合、Gemini candidate generatorはTLS検証を無効化せず、macOSの `curl` へ自動fallbackする。
+APIキーはcurlのコマンドライン引数へ直接載せず、一時header file（0600）経由で渡す。
