@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: setup voices voice reference shunri gemini-voice-candidates gemini-voice-younger-candidates install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
+.PHONY: setup voices voice reference shunri gemini-voice-candidates gemini-voice-younger-candidates gemini-voice-speed-compare install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
 
 setup:
 	bash scripts/bootstrap.sh
@@ -24,6 +24,9 @@ gemini-voice-candidates:
 
 gemini-voice-younger-candidates:
 	$(PYTHON) scripts/gemini_voice_candidates.py --config config/gemini_voice_younger_candidates.json --output-dir outputs/gemini-voice-younger-candidates
+
+gemini-voice-speed-compare:
+	$(PYTHON) scripts/voice_speed_compare.py
 
 install-cli:
 	bash scripts/install_cli.sh
