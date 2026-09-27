@@ -434,3 +434,24 @@ QAは今後:
     ~/Library/Logs/shunri-reel-worker-error.log
 
 render_reel のresultには qaWarnings も返す。
+
+## QuickTime / macOS playback compatibility
+
+FFmpegのH.264/AACがmetadata上は正常でも、macOS / QuickTimeの組み合わせで再生拒否される場合に備え、Apple互換copyを生成する。
+
+既存Reelから:
+
+    make quicktime-copy FILE="$HOME/shunri-voice/outputs/jobs/<job-id>/reel.mp4"
+
+macOSではまず `/usr/bin/avconvert` を使い、Apple純正の720p M4Vへ変換する。
+avconvertが利用できない/失敗した場合は、strict H.264 Main / level 3.1 / yuv420p / AAC-LC / CFR 30fps fallbackを使う。
+
+GitHub workerは今後:
+
+    local master: reel.mp4
+    local QuickTime: reel-quicktime.m4v
+    GitHub review: reel-review.m4v
+
+を生成する。
+
+QAもmetadata probeだけでなく、FFmpeg full decode testを追加し、packet/stream破損を検知する。
