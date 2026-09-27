@@ -5,7 +5,11 @@ import argparse
 import base64
 import json
 import os
+import shutil
+import ssl
+import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -31,9 +35,62 @@ def load_config() -> dict:
     return json.loads(CONFIG.read_text(encoding="utf-8"))
 
 
+def _curl_request_json(url: str, payload: dict, api_key: str) -> dict:
+    curl = shutil.which("curl")
+    if not curl:
+        raise SystemExit(
+            "PythonのTLS証明書検証に失敗し、curl fallbackも利用できません。"
+        )
+
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    with tempfile.TemporaryDirectory(prefix="shunri-gemini-") as tmp:
+        tmp_path = Path(tmp)
+        headers_path = tmp_path / "headers.txt"
+        payload_path = tmp_path / "payload.json"
+        headers_path.write_text(
+            "x-goog-api-key: " + api_key + "\n"
+            "Content-Type: application/json\n",
+            encoding="utf-8",
+        )
+        os.chmod(headers_path, 0o600)
+        payload_path.write_bytes(body)
+
+        proc = subprocess.run(
+            [
+                curl,
+                "--fail-with-body",
+                "--silent",
+                "--show-error",
+                "--max-time",
+                "180",
+                "-X",
+                "POST",
+                url,
+                "-H",
+                f"@{headers_path}",
+                "--data-binary",
+                f"@{payload_path}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if proc.returncode != 0:
+            detail = (proc.stdout or proc.stderr or "").strip()
+            raise SystemExit(f"Gemini API curl error: {detail}")
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError as exc:
+            raise SystemExit(
+                "Gemini API response was not valid JSON: "
+                + proc.stdout[:500]
+            ) from exc
+
+
 def request_json(path: str, payload: dict, api_key: str) -> dict:
+    url = API_ROOT + path
     req = urllib.request.Request(
-        API_ROOT + path,
+        url,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
         headers={
             "x-goog-api-key": api_key,
@@ -48,6 +105,16 @@ def request_json(path: str, payload: dict, api_key: str) -> dict:
         body = exc.read().decode("utf-8", errors="replace")
         raise SystemExit(f"Gemini API error {exc.code}: {body}") from exc
     except urllib.error.URLError as exc:
+        reason = getattr(exc, "reason", None)
+        ssl_failure = isinstance(reason, ssl.SSLCertVerificationError) or (
+            "CERTIFICATE_VERIFY_FAILED" in str(exc)
+        )
+        if ssl_failure:
+            print(
+                "PythonのCA証明書チェーンで検証できなかったため、"
+                "TLS検証を無効化せずmacOS curlへ切り替えます。"
+            )
+            return _curl_request_json(url, payload, api_key)
         raise SystemExit(f"Gemini API connection error: {exc}") from exc
 
 
