@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import http.client
 import platform
 import shutil
 import subprocess
@@ -49,7 +50,10 @@ def server_is_healthy() -> bool:
     try:
         with urllib.request.urlopen(HEALTH_URL, timeout=2) as response:
             return 200 <= response.status < 300
-    except (urllib.error.URLError, TimeoutError):
+    except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
+        # Container startup can briefly reset/close localhost connections before
+        # the health endpoint is ready. Treat those as transient not-yet-healthy
+        # states so ensure_server() can keep polling instead of crashing.
         return False
 
 
