@@ -79,11 +79,12 @@ def main() -> int:
     output_dir = args.output_dir.expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    print("Selected voice: Shunri Warm Younger C (#3)")
+    source_stem = source.stem.removesuffix("-audition")
+    print(f"Selected voice source: {source.name}")
     print(f"source: {source}")
     for rate in rates:
         tag = str(rate).replace(".", "p")
-        dest = output_dir / f"shunri-warm-younger-c-{tag}x.wav"
+        dest = output_dir / f"{source_stem}-{tag}x.wav"
         print(f"render: {rate:.2f}x -> {dest.name}")
         render_variant(source, dest, rate)
 
@@ -95,7 +96,7 @@ def main() -> int:
     print("Speed comparison created.")
     for rate in rates:
         tag = str(rate).replace(".", "p")
-        dest = output_dir / f"shunri-warm-younger-c-{tag}x.wav"
+        dest = output_dir / f"{source_stem}-{tag}x.wav"
         print(f"  afplay {dest}")
     return 0
 
