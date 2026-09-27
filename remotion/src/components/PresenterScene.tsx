@@ -21,9 +21,12 @@ const cameraTransform = (
   return `scale(1.03) translateX(${Math.sin(p * Math.PI * 2) * 5}px)`;
 };
 
-export const PresenterScene: React.FC<{scene: Scene}> = ({scene}) => {
+export const PresenterScene: React.FC<{scene: Scene; durationInFrames: number}> = ({
+  scene,
+  durationInFrames,
+}) => {
   const frame = useCurrentFrame();
-  const {fps, durationInFrames} = useVideoConfig();
+  const {fps} = useVideoConfig();
   const fadeFrames = Math.max(4, Math.round(fps * 0.14));
   const fadeIn = interpolate(frame, [0, fadeFrames], [0, 1], {
     extrapolateLeft: "clamp",
