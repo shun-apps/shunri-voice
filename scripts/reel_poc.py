@@ -13,7 +13,7 @@ import wave
 from pathlib import Path
 
 from caption_timing import align_phrases
-from caption_layout import ass_text, build_caption_cues
+from caption_layout import ass_text, build_caption_cues, split_caption_units
 from reel_audio import generate_audio_tracks
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,26 +115,12 @@ def wav_duration(path: Path) -> float:
     return frames / rate if rate else 0.0
 
 
-def split_long_phrase(text: str, max_chars: int = 24) -> list[str]:
-    text = text.strip()
-    if len(text) <= max_chars:
-        return [text] if text else []
-
-    pieces = [x.strip() for x in re.split(r"(?<=[、，,])", text) if x.strip()]
-    if len(pieces) == 1:
-        return [text[i : i + max_chars] for i in range(0, len(text), max_chars)]
-
-    chunks: list[str] = []
-    current = ""
-    for piece in pieces:
-        if current and len(current) + len(piece) > max_chars:
-            chunks.append(current)
-            current = piece
-        else:
-            current += piece
-    if current:
-        chunks.append(current)
-    return chunks
+def split_long_phrase(text: str, max_chars: int = 34) -> list[str]:
+    return split_caption_units(
+        text,
+        max_unit_chars=max_chars,
+        min_unit_chars=8,
+    )
 
 
 def split_script(text: str) -> list[str]:
