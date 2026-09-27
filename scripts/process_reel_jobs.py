@@ -272,6 +272,8 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "--lipsync-backend",
         str(job.get("lipsyncBackend") or "auto"),
     ]
+    if job.get("autoAudio") is False:
+        cmd.append("--no-auto-audio")
 
     bgm_asset = str(job.get("bgmAsset") or "").strip()
     if bgm_asset:
@@ -309,6 +311,7 @@ def process_render_job(job: dict, bridge: Path) -> dict:
     qa = json.loads(qa_report.read_text(encoding="utf-8"))
     if qa.get("passed") is not True:
         raise RuntimeError("Reel QAが不合格です。")
+    plan = json.loads(scene_plan.read_text(encoding="utf-8"))
 
     asset_dir_rel = ASSETS_REL / job_id
     asset_dir = bridge / asset_dir_rel
@@ -354,6 +357,10 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "captionsAsset": (asset_dir_rel / "captions.ass").as_posix(),
         "qaPassed": True,
         "qaWarnings": qa.get("warnings", []),
+        "captionEngine": plan.get("captionEngine"),
+        "motionEngine": plan.get("motionEngine"),
+        "audioDesign": plan.get("audioDesign"),
+        "autoAudio": job.get("autoAudio") is not False,
         "durationSeconds": round(wav_duration(narration_wav), 3),
         "motionBank": "production-if-complete-else-generated",
         "lipsyncBackend": str(job.get("lipsyncBackend") or "auto"),
