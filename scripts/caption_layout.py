@@ -54,6 +54,10 @@ KEY_TERMS = (
     "CPA",
 )
 
+DEFAULT_ACCENT_ASS = "&H00007AFF&"  # #FF7A00 in ASS BGR order
+ENTRY_START_Y = 1692
+ENTRY_END_Y = 1670
+
 
 @dataclass(frozen=True)
 class CaptionCue:
@@ -241,19 +245,39 @@ def build_caption_cues(
     return cues
 
 
-def ass_text(cue: CaptionCue, default_style: str = "Default") -> str:
-    display = cue.display
-    if not cue.highlight or cue.highlight not in display.replace(r"\N", ""):
-        return display
+def ass_entry_prefix() -> str:
+    return (
+        rf"{\an2\move(540,{ENTRY_START_Y},540,{ENTRY_END_Y},0,180)"
+        r"\fad(120,80)}"
+    )
 
-    # Keep line break positions intact while applying emphasis to the matching phrase.
+
+def ass_highlight(text: str, accent_ass: str = DEFAULT_ACCENT_ASS) -> str:
+    return (
+        rf"{{\1c{accent_ass}\b1\fscx100\fscy100"
+        r"\t(0,90,\fscx115\fscy115)"
+        r"\t(90,220,\fscx100\fscy100)}}"
+        + text
+        + r"{\1c&H00FFFFFF&\b1\fscx100\fscy100}"
+    )
+
+
+def ass_text(
+    cue: CaptionCue,
+    default_style: str = "Default",
+    accent_ass: str = DEFAULT_ACCENT_ASS,
+) -> str:
+    display = cue.display
+    prefix = ass_entry_prefix()
+
+    if not cue.highlight or cue.highlight not in display.replace(r"\N", ""):
+        return prefix + display
+
+    # Preserve semantic line breaks while applying one restrained color/pop emphasis.
     plain = display.replace(r"\N", "\u0000")
     marker = cue.highlight
     if marker not in plain:
-        return display
-    emphasized = plain.replace(
-        marker,
-        r"{\fs82\b1}" + marker + rf"{{\r{default_style}}}",
-        1,
-    )
-    return emphasized.replace("\u0000", r"\N")
+        return prefix + display
+
+    emphasized = plain.replace(marker, ass_highlight(marker, accent_ass), 1)
+    return prefix + emphasized.replace("\u0000", r"\N")
