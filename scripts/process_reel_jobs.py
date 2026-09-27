@@ -355,7 +355,14 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "qaPassed": True,
         "qaWarnings": qa.get("warnings", []),
         "captionEngine": plan.get("captionEngine"),
+        "captionEmphasis": plan.get("captionEmphasis"),
+        "captionEntryAnimation": plan.get("captionEntryAnimation"),
         "motionEngine": plan.get("motionEngine"),
+        "layoutEngine": plan.get("layoutEngine"),
+        "layoutVariants": [
+            str(scene.get("layoutVariant") or "center")
+            for scene in (plan.get("scenes") or [])
+        ],
         "audioDesign": plan.get("audioDesign"),
         "syntheticAudio": False,
         "durationSeconds": round(wav_duration(narration_wav), 3),

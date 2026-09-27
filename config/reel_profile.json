@@ -39,7 +39,11 @@
     "maxCueChars": 30,
     "avoidOrphanLine": true,
     "avoidBrokenExpressions": true,
-    "keywordEmphasis": "size-only-v1"
+    "keywordEmphasis": "color-pop-v1",
+    "emphasisMode": "color-pop-v1",
+    "entryAnimation": "fade-up-v1",
+    "accentHex": "#FF7A00",
+    "accentAss": "&H00007AFF&"
   },
   "pacing": {
     "defaultVisualChangeSeconds": [
@@ -56,6 +60,7 @@
     ],
     "cameraMotionCycle": [
       "slow-push",
+      "punch-in",
       "drift-left",
       "punch-in",
       "drift-right",
@@ -96,7 +101,16 @@
     "randomStockFallback": false,
     "sceneOverlayNaming": "s01.png|jpg|jpeg|webp",
     "overlayAnimation": "top-slide-fade-v1",
-    "overlayTop": 120
+    "overlayTop": 120,
+    "layoutVariants": [
+      "center",
+      "left-presenter",
+      "right-presenter",
+      "fullscreen-card"
+    ],
+    "calloutMode": "mixed-overlay-v1",
+    "presenterSideInset": 40,
+    "fullscreenCardInset": 55
   },
   "audio": {
     "narrationIsMaster": true,
@@ -131,7 +145,13 @@
       "caption-orphan-line",
       "caption-kinsoku-start",
       "caption-broken-expression",
-      "video-decode-failed"
+      "video-decode-failed",
+      "caption-unbalanced-ass-tags",
+      "caption-invalid-ass-tag",
+      "caption-missing-entry-animation",
+      "caption-broken-emphasis-animation",
+      "caption-missing-pop-scale",
+      "invalid-layout-variant"
     ],
     "report": "qa-report.json"
   }
