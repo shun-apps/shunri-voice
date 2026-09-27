@@ -66,7 +66,8 @@ quicktime-copy:
 
 self-check:
 	$(PYTHON) -m py_compile scripts/*.py
-	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); print("self-check: OK")'
+	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); print("config-check: OK")'
+	PYTHONPATH=scripts $(PYTHON) scripts/self_test_reel.py
 
 clean:
 	rm -rf outputs
