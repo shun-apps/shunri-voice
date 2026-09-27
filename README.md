@@ -455,3 +455,77 @@ GitHub workerは今後:
 を生成する。
 
 QAもmetadata probeだけでなく、FFmpeg full decode testを追加し、packet/stream破損を検知する。
+
+## Phase 6 — editorial motion / captions / auto audio
+
+リップシンクを保留したまま、参考Reelとの差を縮めるための編集レイヤー。
+
+### 日本語テロップ
+
+- 最大2行
+- 1行18文字を上限
+- 1〜3文字だけの孤立行を禁止
+- 句読点・助詞・意味境界を優先
+- `ていない` / `じゃなくて` / `かもしれません` 等を途中で切らない
+- 長文は1枚に詰めず、複数caption cueへ分割
+- 数字 / AI / LP / Canva / CTA / CVR / CPA / 強い否定語を必要時のみサイズ強調
+
+例:
+
+    仕事の流れが
+    変わっていないのかもしれません。
+
+### editorial camera motion
+
+Motion Bankの各sceneへ追加のカメラモーションを重ねる。
+
+- slow-push
+- drift-left
+- punch-in
+- drift-right
+- micro-drift
+- cta-push
+
+静止画由来Motion Bankでも、sceneごとに寄り・左右移動・パンチインを変えて
+「静止画の切替だけ」に見えにくくする。
+
+### top overlay animation
+
+`overlayAssets` / `--overlay-dir` の画像は、単純固定表示ではなく:
+
+    上からスライドイン
+    + fade in
+    + 上部カード表示
+    + scene終端でfade out
+
+となる。実スクショ / 図解 / UIを優先。
+
+### auto BGM / SE
+
+外部BGM指定がない場合でも、ライセンス依存のない内部生成の低音量ambient bedを自動生成する。
+SEは必要箇所だけ:
+
+- overlay → soft pop
+- punch-in → soft impact
+- CTA → light click
+
+カットごとのwhooshは使わない。
+BGMは従来どおり瞬理ナレーションをsidechainにして自動duckする。
+
+外部BGMを指定した場合は、外部BGMを優先し、auto SEだけ残す。
+
+無効化:
+
+    python3 scripts/reel_poc.py --file script.txt --no-auto-audio
+
+### QA
+
+従来QAに加え:
+
+- 3行以上の字幕をreject
+- 18文字超の行をreject
+- 孤立行をreject
+- 禁則文字の行頭をreject
+- `ない` / `です` / `ます` / `かもし...` で不自然に始まる2行目をreject
+
+`make self-check` はcaption / camera / auto audioのPhase-6 self-testも実行する。
