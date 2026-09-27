@@ -33,7 +33,13 @@
       "word-timestamps-when-provider-available",
       "speech-energy-pauses-v1",
       "character-weight-fallback"
-    ]
+    ],
+    "engine": "japanese-semantic-v2",
+    "maxLineChars": 18,
+    "maxCueChars": 30,
+    "avoidOrphanLine": true,
+    "avoidBrokenExpressions": true,
+    "keywordEmphasis": "size-only-v1"
   },
   "pacing": {
     "defaultVisualChangeSeconds": [
@@ -47,6 +53,14 @@
     "emphasisSeconds": [
       0.6,
       2
+    ],
+    "cameraMotionCycle": [
+      "slow-push",
+      "drift-left",
+      "punch-in",
+      "drift-right",
+      "micro-drift",
+      "cta-push"
     ]
   },
   "transitions": {
@@ -80,13 +94,22 @@
       "generated-broll"
     ],
     "randomStockFallback": false,
-    "sceneOverlayNaming": "s01.png|jpg|jpeg|webp"
+    "sceneOverlayNaming": "s01.png|jpg|jpeg|webp",
+    "overlayAnimation": "top-slide-fade-v1",
+    "overlayTop": 120
   },
   "audio": {
     "narrationIsMaster": true,
     "bgmAutoDuck": true,
     "repetitiveWhoosh": false,
-    "bgmOptional": true
+    "bgmOptional": true,
+    "autoOriginalBgm": true,
+    "autoSparseSfx": true,
+    "sfxPolicy": [
+      "overlay-pop",
+      "punch-soft-impact",
+      "cta-click"
+    ]
   },
   "qa": {
     "rejectOn": [
@@ -99,7 +122,12 @@
       "broken-media",
       "wrong-aspect-ratio",
       "wrong-shunri-identity",
-      "approved-script-mutated"
+      "approved-script-mutated",
+      "caption-more-than-2-lines",
+      "caption-orphan-line",
+      "caption-kinsoku-start",
+      "caption-broken-expression",
+      "video-decode-failed"
     ],
     "report": "qa-report.json"
   }
