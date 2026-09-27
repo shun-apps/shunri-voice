@@ -31,7 +31,12 @@ const SceneCaptions: React.FC<{
         cursor += beatDuration;
         return (
           <Sequence key={`${beat}-${index}`} from={from} durationInFrames={beatDuration}>
-            <CaptionBeat text={beat} accentHex={accentHex} hero={isHeroBeat(beat)} />
+            <CaptionBeat
+              text={beat}
+              accentHex={accentHex}
+              hero={isHeroBeat(beat)}
+              durationInFrames={beatDuration}
+            />
           </Sequence>
         );
       })}
@@ -62,7 +67,7 @@ export const ShunriReel: React.FC<ShunriReelProps> = ({
             from={from}
             durationInFrames={durationInFrames}
           >
-            <PresenterScene scene={scene} />
+            <PresenterScene scene={scene} durationInFrames={durationInFrames} />
             <SceneCaptions
               caption={scene.caption}
               accentHex={accentHex}
