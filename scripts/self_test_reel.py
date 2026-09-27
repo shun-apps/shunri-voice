@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import tempfile
-import wave
 from pathlib import Path
 
 from caption_layout import balanced_lines, build_caption_cues
-from reel_audio import generate_audio_tracks
 from reel_poc import camera_motion_filter
 
 
@@ -45,15 +42,6 @@ def main() -> int:
 
     assert "zoompan=" in camera_motion_filter("punch-in", 1.5)
     assert "zoompan=" in camera_motion_filter("drift-left", 2.0)
-
-    with tempfile.TemporaryDirectory() as tmp:
-        bgm, sfx = generate_audio_tracks(Path(tmp), 1.0, scenes)
-        for path in (bgm, sfx):
-            assert path.exists() and path.stat().st_size > 1000
-            with wave.open(str(path), "rb") as audio:
-                assert audio.getframerate() == 48000
-                assert audio.getnchannels() == 1
-                assert audio.getnframes() > 1000
 
     print("reel-self-test: OK")
     return 0

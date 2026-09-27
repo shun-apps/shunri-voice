@@ -14,7 +14,6 @@ from pathlib import Path
 
 from caption_timing import align_phrases
 from caption_layout import ass_text, build_caption_cues, split_caption_units
-from reel_audio import generate_audio_tracks
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config" / "reel_profile.json"
@@ -81,11 +80,6 @@ def parse_args() -> argparse.Namespace:
         "--bgm",
         type=Path,
         help="Optional BGM file. Narration remains master and BGM is auto-ducked.",
-    )
-    parser.add_argument(
-        "--no-auto-audio",
-        action="store_true",
-        help="Disable the built-in original ambient BGM / sparse SFX bed.",
     )
     parser.add_argument(
         "--skip-qa",
@@ -278,7 +272,13 @@ def prepare_bgm(job_dir: Path, bgm: Path | None) -> Path | None:
     return destination
 
 
-def write_plan(path: Path, script: str, duration: float, timeline: list[dict]) -> None:
+def write_plan(
+    path: Path,
+    script: str,
+    duration: float,
+    timeline: list[dict],
+    audio_design: str,
+) -> None:
     data = {
         "version": 1,
         "format": "shunri-reel-v1",
@@ -288,7 +288,7 @@ def write_plan(path: Path, script: str, duration: float, timeline: list[dict]) -
         "script": script,
         "captionEngine": "japanese-semantic-v2",
         "motionEngine": "editorial-camera-v1",
-        "audioDesign": "auto-editorial-v1",
+        "audioDesign": audio_design,
         "scenes": timeline,
     }
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -640,7 +640,6 @@ def render_motion(
     timeline: list[dict],
     lipsync_backend: str,
     bgm_path: Path | None,
-    sfx_path: Path | None,
 ) -> None:
     copy_motion_bank(job_dir, timeline)
     render_motion_track(job_dir, timeline, lipsync_backend)
@@ -654,55 +653,34 @@ def render_motion(
         "-i", "/work/narration.wav",
     ]
 
-    bgm_index: int | None = None
-    sfx_index: int | None = None
-    next_index = 2
+    video_filter = (
+        "[0:v]subtitles=/work/captions.ass:"
+        "fontsdir=/usr/share/fonts/opentype/noto[vout]"
+    )
 
     if bgm_path is not None:
-        bgm_index = next_index
-        next_index += 1
+        fade_out_start = max(0.0, duration - 0.8)
         cmd += ["-stream_loop", "-1", "-i", f"/work/{bgm_path.name}"]
-
-    if sfx_path is not None:
-        sfx_index = next_index
-        cmd += ["-i", f"/work/{sfx_path.name}"]
-
-    if bgm_index is not None or sfx_index is not None:
-        filters = [
-            "[0:v]subtitles=/work/captions.ass:fontsdir=/usr/share/fonts/opentype/noto[vout]"
-        ]
-        audio_inputs = ["[1:a]"]
-
-        if bgm_index is not None:
-            filters.append(
-                f"[{bgm_index}:a]volume=0.85[bgm];"
-                "[bgm][1:a]sidechaincompress="
-                "threshold=0.018:ratio=9:attack=20:release=380[ducked]"
-            )
-            audio_inputs.append("[ducked]")
-
-        if sfx_index is not None:
-            filters.append(f"[{sfx_index}:a]volume=0.48[sfx]")
-            audio_inputs.append("[sfx]")
-
-        filters.append(
-            "".join(audio_inputs)
-            + f"amix=inputs={len(audio_inputs)}:normalize=0,"
-            "alimiter=limit=0.90[aout]"
+        audio_filter = (
+            f"[2:a]volume=0.12,"
+            "afade=t=in:st=0:d=0.70,"
+            f"afade=t=out:st={fade_out_start:.3f}:d=0.80[bgm];"
+            "[bgm][1:a]sidechaincompress="
+            "threshold=0.018:ratio=10:attack=18:release=420[ducked];"
+            "[1:a][ducked]amix=inputs=2:normalize=0,"
+            "loudnorm=I=-16:TP=-1.5:LRA=7,"
+            "alimiter=limit=0.92[aout]"
         )
-        cmd += [
-            "-filter_complex", ";".join(filters),
-            "-map", "[vout]",
-            "-map", "[aout]",
-        ]
     else:
-        cmd += [
-            "-vf", "subtitles=/work/captions.ass:fontsdir=/usr/share/fonts/opentype/noto",
-            "-map", "0:v:0",
-            "-map", "1:a:0",
-        ]
+        audio_filter = (
+            "[1:a]loudnorm=I=-16:TP=-1.5:LRA=7,"
+            "alimiter=limit=0.92[aout]"
+        )
 
     cmd += [
+        "-filter_complex", video_filter + ";" + audio_filter,
+        "-map", "[vout]",
+        "-map", "[aout]",
         "-t", f"{duration:.3f}",
         "-r", "30",
         "-c:v", "libx264",
@@ -711,6 +689,8 @@ def render_motion(
         "-pix_fmt", "yuv420p",
         "-c:a", "aac",
         "-b:a", "192k",
+        "-ar", "48000",
+        "-ac", "2",
         "-movflags", "+faststart",
         f"/work/{output_name}",
     ]
@@ -773,14 +753,9 @@ def main() -> int:
     phrases = split_script(script)
     timeline = build_timeline(phrases, duration, narration_path)
     prepare_overlays(job_dir, timeline, args.overlay_dir)
-    external_bgm = prepare_bgm(job_dir, args.bgm)
-    auto_bgm: Path | None = None
-    auto_sfx: Path | None = None
-    if not args.no_auto_audio:
-        auto_bgm, auto_sfx = generate_audio_tracks(job_dir, duration, timeline)
-    bgm_path = external_bgm or auto_bgm
-    sfx_path = auto_sfx
-    write_plan(plan_path, script, duration, timeline)
+    bgm_path = prepare_bgm(job_dir, args.bgm)
+    audio_design = "asset-bgm-v1" if bgm_path is not None else "narration-only-v1"
+    write_plan(plan_path, script, duration, timeline, audio_design)
     write_ass(ass_path, timeline, width, height)
 
     print("[3/4] Reel renderer 準備")
@@ -800,7 +775,6 @@ def main() -> int:
             timeline,
             args.lipsync_backend,
             bgm_path,
-            sfx_path,
         )
     shutil.copy2(temp_output, output)
 
@@ -840,7 +814,11 @@ def main() -> int:
     if args.static_presenter:
         print("注: --static-presenter のため旧静止画モードです。")
     else:
-        print("Phase-6: semantic captions / editorial motion / animated overlays / BGM+SFX / QA が有効です。")
+        print("Phase-6.1: semantic captions / editorial motion / animated overlays / production audio policy / QA が有効です。")
+        if bgm_path is None:
+            print("audio: narration-only（合成BGM/SEは本番では生成しません）")
+        else:
+            print("audio: supplied BGM + narration ducking + -16 LUFS normalization")
         if args.lipsync_backend == "auto":
             print("lip-sync: SHUNRI_LIPSYNC_COMMAND があればexternal、なければpassthroughです。")
         else:

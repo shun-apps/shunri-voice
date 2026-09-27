@@ -103,13 +103,17 @@
     "bgmAutoDuck": true,
     "repetitiveWhoosh": false,
     "bgmOptional": true,
-    "autoOriginalBgm": true,
-    "autoSparseSfx": true,
+    "autoOriginalBgm": false,
+    "autoSparseSfx": false,
     "sfxPolicy": [
-      "overlay-pop",
-      "punch-soft-impact",
-      "cta-click"
-    ]
+      "asset-bank-only"
+    ],
+    "productionPolicy": "asset-only",
+    "syntheticAudioAllowed": false,
+    "defaultWithoutAssets": "narration-only",
+    "finalLoudnessLUFS": -16,
+    "truePeakDbTP": -1.5,
+    "externalBgmVolume": 0.12
   },
   "qa": {
     "rejectOn": [
