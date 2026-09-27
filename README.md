@@ -649,3 +649,36 @@ standalone emphasisは通常66pxに対して約122pxを基準にし、
 - 旧inline color-popとPhase 6.3 standalone punchの両方を検証
 - standalone cueもentry motion / fade必須
 - make self-check で standalone / inline の両パターンを検証する
+
+## Gemini Voice Design — Shunri candidates
+
+Gemini 3.8 Flash TTSのVoice Designを、既存Irodori音声を置き換えずに比較できる。
+Voice Replicationは使わない。瞬理は実在話者の声ではないため、Voice Designで新しいブランド音声を作る。
+
+候補は `config/gemini_voice_candidates.json` に5種類:
+
+- Shunri Core — 現行の方向に近い、低〜中域・知的・会話的
+- Shunri Editorial — 低め・少しスモーキー・モード寄り
+- Shunri Warm Guide — 温かく親しみやすいが甘すぎない
+- Shunri Strategist — 明瞭・少し速め・戦略家の印象
+- Shunri Human Texture — 微かなハスキー感・息遣い・人間味重視
+
+APIキーはGitHubへ保存しない。Google AI StudioでAPIキーを発行してMacのTerminalにだけ設定する:
+
+    export GEMINI_API_KEY='YOUR_KEY'
+
+5候補をVoice Designし、同一の日本語台本で比較音声まで生成:
+
+    make gemini-voice-candidates
+
+出力:
+
+    outputs/gemini-voice-candidates/
+
+`manifest.json` に各 `voice_id` と設計promptを保存する。各候補の `*-audition.wav` は同じ台本・同じstyleで生成するので、声質の比較に使う。
+
+既存manifestがある場合は誤って新しいstored voiceを量産しないよう停止する。作り直す場合だけ:
+
+    python3 scripts/gemini_voice_candidates.py --force-new
+
+Voice Designのstored voiceにはプロジェクト上限とTTLがあるため、voice_idだけではなく設計promptをcanonicalとして保持する。
