@@ -529,3 +529,22 @@ BGMは従来どおり瞬理ナレーションをsidechainにして自動duckす�
 - `ない` / `です` / `ます` / `かもし...` で不自然に始まる2行目をreject
 
 `make self-check` はcaption / camera / auto audioのPhase-6 self-testも実行する。
+
+## Phase 6.1 — production audio policy
+
+Phase 6で試した内部生成のsynthetic BGM / SEは本番品質に達しないため廃止。
+
+Production rule:
+- 瞬理ナレーションは常にmaster
+- BGM未指定時は narration-only
+- BGMはユーザー提供 / 承認済みassetのみ使用
+- BGMは0.12程度から開始し、narration sidechainでduck
+- final mixは -16 LUFS / true peak -1.5 dBTP を目標
+- synthetic sine / pulse / whoosh / clickは本番で自動生成しない
+- SEは今後asset bank方式で追加する
+
+外部BGMを使う場合:
+
+    python3 scripts/reel_poc.py --file script.txt --bgm /path/to/bgm.mp3
+
+BGMがない場合は声だけで正常に完成する。
