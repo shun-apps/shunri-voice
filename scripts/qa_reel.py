@@ -128,10 +128,12 @@ def caption_entries(path: Path) -> list[dict]:
         parts = line.split(",", 9)
         if len(parts) < 10:
             continue
-        text = tag_re.sub("", parts[9])
+        raw_text = parts[9]
+        text = tag_re.sub("", raw_text)
         entries.append({
             "start": parse_ass_time(parts[1]),
             "end": parse_ass_time(parts[2]),
+            "raw": raw_text,
             "text": text,
             "lines": text.split(r"\N"),
         })
@@ -161,6 +163,52 @@ def validate_caption_layout(entries: list[dict]) -> list[str]:
                 failures.append(f"caption-broken-expression-{index}")
 
     return failures
+
+
+def validate_caption_styling(entries: list[dict]) -> list[str]:
+    failures: list[str] = []
+    override_re = re.compile(r"\{([^}]*)\}")
+
+    for index, entry in enumerate(entries, start=1):
+        raw = str(entry.get("raw") or "")
+        if raw.count("{") != raw.count("}"):
+            failures.append(f"caption-unbalanced-ass-tags-{index}")
+            continue
+
+        for block in override_re.findall(raw):
+            if block and "\\" not in block:
+                failures.append(f"caption-invalid-ass-tag-{index}")
+                break
+
+        if r"\move(" not in raw or r"\fad(" not in raw:
+            failures.append(f"caption-missing-entry-animation-{index}")
+
+        if r"\1c&H" in raw:
+            if r"\t(0,90," not in raw or r"\t(90,220," not in raw:
+                failures.append(f"caption-broken-emphasis-animation-{index}")
+            if r"\fscx115\fscy115" not in raw:
+                failures.append(f"caption-missing-pop-scale-{index}")
+
+    return failures
+
+
+def validate_layout_variants(plan: dict) -> tuple[list[str], list[str]]:
+    failures: list[str] = []
+    warnings: list[str] = []
+    allowed = {"center", "left-presenter", "right-presenter", "fullscreen-card"}
+    scenes = plan.get("scenes") or []
+    used: list[str] = []
+
+    for index, scene in enumerate(scenes, start=1):
+        value = str(scene.get("layoutVariant") or "center")
+        used.append(value)
+        if value not in allowed:
+            failures.append(f"invalid-layout-variant-{index}")
+
+    if len(scenes) >= 4 and len(set(used)) <= 1:
+        warnings.append("layout-variation-too-low")
+
+    return failures, warnings
 
 
 def fps_value(rate: str | None) -> float:
@@ -247,6 +295,18 @@ def main() -> int:
     if plan.get("voice") != "shunri":
         failures.append("wrong-voice")
 
+    layout_failures, layout_warnings = validate_layout_variants(plan)
+    failures.extend(layout_failures)
+    warnings.extend(layout_warnings)
+    checks["captionEmphasis"] = plan.get("captionEmphasis")
+    checks["captionEntryAnimation"] = plan.get("captionEntryAnimation")
+    checks["motionEngine"] = plan.get("motionEngine")
+    checks["layoutEngine"] = plan.get("layoutEngine")
+    checks["layoutVariants"] = [
+        str(scene.get("layoutVariant") or "center")
+        for scene in (plan.get("scenes") or [])
+    ]
+
     windows = caption_windows(captions)
     entries = caption_entries(captions)
     checks["captionCount"] = len(windows)
@@ -254,6 +314,7 @@ def main() -> int:
     if not windows:
         failures.append("missing-captions")
     failures.extend(validate_caption_layout(entries))
+    failures.extend(validate_caption_styling(entries))
     for i, (start, end) in enumerate(windows):
         if end <= start:
             failures.append(f"invalid-caption-window-{i+1}")
