@@ -548,3 +548,70 @@ Production rule:
     python3 scripts/reel_poc.py --file script.txt --bgm /path/to/bgm.mp3
 
 BGMがない場合は声だけで正常に完成する。
+## Phase 6.2 — caption emphasis / layout punch
+
+Phase 6.1のproduction audio policyはそのまま維持し、見た目だけを強化する。
+リップシンクは引き続き外部provider選定まで保留。
+
+### caption color emphasis
+
+- 基本文字は白 + 黒縁
+- 重要語だけaccent colorへ変更
+- accentは `config/reel_profile.json` の `captions.accentHex / accentAss` で集中管理
+- default accent: `#FF7A00`
+- 数字 / AI / LP / Canva / CTA / CVR / CPA / 課題語を優先
+
+### pop emphasis
+
+強調語はevent先頭から短時間だけ:
+
+    100% → 115% → 100%
+
+過剰なbounceや1文字ずつのTikTok風animationは使わない。
+
+### fade-up entry
+
+字幕全体は:
+
+    下から約22px
+    + 120ms fade in
+    + 80ms fade out
+
+で入る。semantic caption layout / 最大2行 / 18文字上限 / 禁則処理は継続。
+
+### layout variants
+
+scene planに `layoutVariant` を追加:
+
+- `center`
+- `left-presenter`
+- `right-presenter`
+- `fullscreen-card`
+
+標準cycleでは、centerだけを繰り返さず、人物の左右寄せとfull-screen calloutを混ぜる。
+
+### fullscreen card
+
+`fullscreen-card` + overlay asset の場合は、背景の瞬理をblur/dimし、
+スクショ / 図解 / UIカードを大きく中央へ入れる。
+overlayがない場合でも背景処理とcallout frameで通常sceneとの差を作る。
+
+### QA
+
+従来QAに加え:
+
+- ASS override brace不整合をreject
+- entry animation欠落をreject
+- color emphasis時のpop transform欠落をreject
+- 未定義layoutVariantをreject
+- full-screen calloutを含む最終video decodeを必須
+
+`make self-check` で caption emphasis / fade-up / layout filter / QA parser を簡易検証する。
+
+### audio
+
+Phase 6.1のまま:
+
+- BGM未指定 = narration-only
+- BGM指定 = supplied/approved assetのみ
+- synthetic BGM / SEはproductionで生成しない
