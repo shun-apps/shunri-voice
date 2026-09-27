@@ -247,7 +247,7 @@ def build_caption_cues(
 
 def ass_entry_prefix() -> str:
     return (
-        rf"{\an2\move(540,{ENTRY_START_Y},540,{ENTRY_END_Y},0,180)"
+        rf"{{\an2\move(540,{ENTRY_START_Y},540,{ENTRY_END_Y},0,180)"
         r"\fad(120,80)}"
     )
 
