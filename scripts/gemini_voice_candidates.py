@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config" / "gemini_voice_candidates.json"
 DEFAULT_OUTPUT = ROOT / "outputs" / "gemini-voice-candidates"
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta"
+_FORCE_CURL = False
 
 
 def parse_args() -> argparse.Namespace:
@@ -25,14 +26,18 @@ def parse_args() -> argparse.Namespace:
         description="Create and audition Shunri Voice Design candidates with Gemini 3.8 Flash TTS."
     )
     parser.add_argument("--count", type=int, default=5, choices=range(1, 6))
+    parser.add_argument("--config", type=Path, default=CONFIG)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--force-new", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
 
-def load_config() -> dict:
-    return json.loads(CONFIG.read_text(encoding="utf-8"))
+def load_config(path: Path) -> dict:
+    resolved = path.expanduser().resolve()
+    if not resolved.exists():
+        raise SystemExit(f"config が見つかりません: {resolved}")
+    return json.loads(resolved.read_text(encoding="utf-8"))
 
 
 def _curl_request_json(url: str, payload: dict, api_key: str) -> dict:
@@ -88,7 +93,10 @@ def _curl_request_json(url: str, payload: dict, api_key: str) -> dict:
 
 
 def request_json(path: str, payload: dict, api_key: str) -> dict:
+    global _FORCE_CURL
     url = API_ROOT + path
+    if _FORCE_CURL:
+        return _curl_request_json(url, payload, api_key)
     req = urllib.request.Request(
         url,
         data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -110,9 +118,11 @@ def request_json(path: str, payload: dict, api_key: str) -> dict:
             "CERTIFICATE_VERIFY_FAILED" in str(exc)
         )
         if ssl_failure:
+            _FORCE_CURL = True
             print(
                 "PythonのCA証明書チェーンで検証できなかったため、"
                 "TLS検証を無効化せずmacOS curlへ切り替えます。"
+                " 以降のGemini API呼び出しもcurlを使用します。"
             )
             return _curl_request_json(url, payload, api_key)
         raise SystemExit(f"Gemini API connection error: {exc}") from exc
@@ -186,7 +196,7 @@ def write_audio(path: Path, encoded: str) -> None:
 
 def main() -> int:
     args = parse_args()
-    config = load_config()
+    config = load_config(args.config)
     candidates = list(config["candidates"])[: args.count]
 
     if args.dry_run:
