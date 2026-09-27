@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: setup voices voice reference shunri gemini-voice-candidates gemini-voice-younger-candidates gemini-voice-speed-compare install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
+.PHONY: setup voices voice reference shunri gemini-voice-candidates gemini-voice-younger-candidates gemini-voice-speed-compare install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup remotion-renderer-setup remotion-poc motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
 
 setup:
 	bash scripts/bootstrap.sh
@@ -49,6 +49,12 @@ worker-status:
 reel-renderer-setup:
 	docker build -t shunri-reel-renderer:local docker/reel-renderer
 
+remotion-renderer-setup:
+	docker build -f docker/remotion-renderer/Dockerfile -t shunri-remotion-renderer:local .
+
+remotion-poc:
+	$(PYTHON) scripts/render_remotion.py $(if $(WORK),--work-dir "$(WORK)",) $(if $(AUDIO),--audio "$(AUDIO)",) $(if $(OUTPUT),--output "$(OUTPUT)",)
+
 motion-bank:
 	$(PYTHON) scripts/prepare_motion_bank.py
 
@@ -78,6 +84,7 @@ self-check:
 	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); json.load(open("config/gemini_voice_candidates.json")); json.load(open("config/gemini_voice_younger_candidates.json")); json.load(open("config/shunri_voice_profile.json")); print("config-check: OK")'
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_reel.py
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_shunri_cli.py
+	$(PYTHON) scripts/self_test_remotion.py
 
 clean:
 	rm -rf outputs
