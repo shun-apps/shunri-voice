@@ -1,0 +1,9 @@
+.git
+.github
+.vendor
+outputs
+references
+__pycache__
+*.pyc
+.venv
+.DS_Store
