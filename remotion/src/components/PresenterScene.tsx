@@ -48,12 +48,12 @@ export const PresenterScene: React.FC<{scene: Scene; durationInFrames: number}> 
       src={src}
       muted
       loop
+      objectFit="cover"
       style={{
         position: "absolute",
         inset: -45,
         width: 1170,
         height: 2010,
-        objectFit: "cover",
         transform,
         filter:
           layout === "fullscreen-card"
@@ -86,7 +86,8 @@ export const PresenterScene: React.FC<{scene: Scene; durationInFrames: number}> 
             src={src}
             muted
             loop
-            style={{width: "100%", height: "100%", objectFit: "cover", transform}}
+            objectFit="cover"
+            style={{width: "100%", height: "100%", transform}}
           />
         </div>
       ) : null}
