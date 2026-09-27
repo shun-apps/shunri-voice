@@ -61,6 +61,32 @@ def tracked_repo_dirty(repo: Path) -> bool:
     return bool(proc.stdout.strip())
 
 
+def clear_stale_git_index_lock(repo: Path) -> bool:
+    lock = repo / ".git" / "index.lock"
+    if not lock.exists():
+        return False
+
+    # Remove only an orphaned lock. If lsof says another process still has the
+    # lock open, leave it alone and fail safely.
+    if shutil.which("lsof"):
+        held = subprocess.run(
+            ["lsof", str(lock)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if held.returncode == 0:
+            return False
+
+    try:
+        lock.unlink()
+    except FileNotFoundError:
+        return False
+
+    print(f"stale Git index.lock を削除しました: {lock}")
+    return True
+
+
 def backup_untracked_remote_collisions(repo: Path) -> list[tuple[Path, Path]]:
     proc = subprocess.run(
         ["git", "ls-files", "--others", "--exclude-standard", "-z"],
@@ -100,6 +126,8 @@ def backup_untracked_remote_collisions(repo: Path) -> list[tuple[Path, Path]]:
 
 
 def git_sync_before(repo: Path) -> None:
+    clear_stale_git_index_lock(repo)
+
     if tracked_repo_dirty(repo):
         raise SystemExit(
             f"{repo} に未コミットの追跡ファイル変更があります。安全のため瞬理workerを停止しました。"
