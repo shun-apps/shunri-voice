@@ -20,6 +20,7 @@ ASSETS_REL = Path("runtime/shunri-reel-assets")
 LOCAL_JOB_OUTPUTS = ROOT / "outputs" / "jobs"
 CLI = ROOT / "scripts" / "shunri_cli.py"
 REEL_RENDERER = ROOT / "scripts" / "reel_poc.py"
+QUICKTIME_COMPAT = ROOT / "scripts" / "quicktime_compat.py"
 DOCKER_IMAGE = "irodori-openai-tts:local"
 REEL_RENDER_IMAGE = "shunri-reel-renderer:local"
 
@@ -313,8 +314,20 @@ def process_render_job(job: dict, bridge: Path) -> dict:
     asset_dir = bridge / asset_dir_rel
     asset_dir.mkdir(parents=True, exist_ok=True)
 
-    video_asset = asset_dir / "reel-review.mp4"
-    create_review_proxy(video_path, video_asset)
+    quicktime_path = local_dir / "reel-quicktime.m4v"
+    run([
+        sys.executable,
+        str(QUICKTIME_COMPAT),
+        str(video_path),
+        "--output",
+        str(quicktime_path),
+    ], cwd=ROOT)
+
+    if not quicktime_path.exists():
+        raise RuntimeError("QuickTime互換Reelを生成できませんでした。")
+
+    video_asset = asset_dir / "reel-review.m4v"
+    shutil.copy2(quicktime_path, video_asset)
 
     plan_asset = asset_dir / "scene-plan.json"
     shutil.copy2(scene_plan, plan_asset)
@@ -333,8 +346,8 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "action": "render_reel",
         "status": "completed",
         "voice": "shunri",
-        "asset": (asset_dir_rel / "reel-review.mp4").as_posix(),
-        "assetRole": "review-proxy",
+        "asset": (asset_dir_rel / "reel-review.m4v").as_posix(),
+        "assetRole": "quicktime-review-proxy",
         "narrationAsset": (asset_dir_rel / "narration.mp3").as_posix(),
         "scenePlanAsset": (asset_dir_rel / "scene-plan.json").as_posix(),
         "qaAsset": (asset_dir_rel / "qa-report.json").as_posix(),
@@ -345,6 +358,7 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "motionBank": "production-if-complete-else-generated",
         "lipsyncBackend": str(job.get("lipsyncBackend") or "auto"),
         "localMaster": f"~/shunri-voice/outputs/jobs/{job_id}/reel.mp4",
+        "localQuickTime": f"~/shunri-voice/outputs/jobs/{job_id}/reel-quicktime.m4v",
         "completedAt": now_iso(),
     }
 
