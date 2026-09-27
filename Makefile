@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: setup voices voice reference shunri gemini-voice-candidates install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
+.PHONY: setup voices voice reference shunri gemini-voice-candidates gemini-voice-younger-candidates install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
 
 setup:
 	bash scripts/bootstrap.sh
@@ -21,6 +21,9 @@ shunri:
 
 gemini-voice-candidates:
 	$(PYTHON) scripts/gemini_voice_candidates.py
+
+gemini-voice-younger-candidates:
+	$(PYTHON) scripts/gemini_voice_candidates.py --config config/gemini_voice_younger_candidates.json --output-dir outputs/gemini-voice-younger-candidates
 
 install-cli:
 	bash scripts/install_cli.sh
@@ -69,7 +72,7 @@ quicktime-copy:
 
 self-check:
 	$(PYTHON) -m py_compile scripts/*.py
-	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); json.load(open("config/gemini_voice_candidates.json")); print("config-check: OK")'
+	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); json.load(open("config/gemini_voice_candidates.json")); json.load(open("config/gemini_voice_younger_candidates.json")); print("config-check: OK")'
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_reel.py
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_shunri_cli.py
 
