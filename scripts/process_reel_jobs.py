@@ -61,12 +61,70 @@ def tracked_repo_dirty(repo: Path) -> bool:
     return bool(proc.stdout.strip())
 
 
+def backup_untracked_remote_collisions(repo: Path) -> list[tuple[Path, Path]]:
+    proc = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    raw_paths = [item for item in proc.stdout.split(b"\0") if item]
+    collisions: list[tuple[Path, Path]] = []
+
+    for raw in raw_paths:
+        rel = Path(raw.decode("utf-8", errors="surrogateescape"))
+        tracked_remote = subprocess.run(
+            ["git", "cat-file", "-e", f"origin/main:{rel.as_posix()}"],
+            cwd=repo,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+        if tracked_remote.returncode != 0:
+            continue
+
+        source = repo / rel
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        destination = (
+            Path.home()
+            / ".shunri-worker-backups"
+            / repo.name
+            / stamp
+            / rel
+        )
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(source), str(destination))
+        collisions.append((source, destination))
+
+    return collisions
+
+
 def git_sync_before(repo: Path) -> None:
     if tracked_repo_dirty(repo):
         raise SystemExit(
             f"{repo} に未コミットの追跡ファイル変更があります。安全のため瞬理workerを停止しました。"
         )
-    run(["git", "pull", "--ff-only", "origin", "main"], cwd=repo)
+
+    run(["git", "fetch", "origin", "main"], cwd=repo)
+    collisions = backup_untracked_remote_collisions(repo)
+    for source, destination in collisions:
+        print(
+            "Git pull衝突を避けるため、remoteでtracked化されたuntracked runtime fileを"
+            f"バックアップしました: {source} -> {destination}"
+        )
+
+    merge = subprocess.run(
+        ["git", "merge", "--ff-only", "origin/main"],
+        cwd=repo,
+        check=False,
+        text=True,
+    )
+    if merge.returncode != 0:
+        raise SystemExit(
+            "bridge repoをorigin/mainへfast-forwardできませんでした。"
+            " untracked衝突は自動退避済みです。"
+            " ~/shun-x-scheduler で git status --short --branch を確認してください。"
+        )
 
 
 def git_publish(repo: Path) -> None:
