@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "canonicalVoice": {
+    "provider": "gemini-3.8-flash-tts",
+    "sourceSet": "gemini-voice-younger-candidates",
+    "candidateId": "shunri-warm-younger-b",
+    "candidateNumber": 2,
+    "displayName": "Shunri Warm Younger B",
+    "baseAuditionStyle": "brisk-conversational-v1",
+    "postPlaybackRate": 1.2,
+    "pitchShiftSemitones": 0,
+    "status": "selected"
+  },
+  "notes": [
+    "This is the current canonical Shunri voice direction.",
+    "Keep the selected voice identity fixed and apply 1.2x playback speed without pitch shifting.",
+    "The project-scoped Gemini voiceId remains local in outputs/gemini-voice-younger-candidates/manifest.json and should not be committed."
+  ]
+}

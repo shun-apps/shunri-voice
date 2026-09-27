@@ -75,7 +75,7 @@ quicktime-copy:
 
 self-check:
 	$(PYTHON) -m py_compile scripts/*.py
-	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); json.load(open("config/gemini_voice_candidates.json")); json.load(open("config/gemini_voice_younger_candidates.json")); print("config-check: OK")'
+	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); json.load(open("config/gemini_voice_candidates.json")); json.load(open("config/gemini_voice_younger_candidates.json")); json.load(open("config/shunri_voice_profile.json")); print("config-check: OK")'
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_reel.py
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_shunri_cli.py
 
