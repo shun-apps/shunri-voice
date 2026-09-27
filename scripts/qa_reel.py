@@ -184,9 +184,22 @@ def validate_caption_styling(entries: list[dict]) -> list[str]:
             failures.append(f"caption-missing-entry-animation-{index}")
 
         if r"\1c&H" in raw:
-            if r"\t(0,90," not in raw or r"\t(90,220," not in raw:
+            standalone = (
+                (r"\fs122" in raw or r"\fs126" in raw)
+                and r"\t(0,110,\fscx125\fscy125)" in raw
+                and r"\t(110,280,\fscx110\fscy110)" in raw
+            )
+            inline = (
+                r"\t(0,90," in raw
+                and r"\t(90,220," in raw
+                and r"\fscx115\fscy115" in raw
+            )
+            if not (standalone or inline):
                 failures.append(f"caption-broken-emphasis-animation-{index}")
-            if r"\fscx115\fscy115" not in raw:
+            if not (
+                r"\fscx115\fscy115" in raw
+                or r"\fscx125\fscy125" in raw
+            ):
                 failures.append(f"caption-missing-pop-scale-{index}")
 
     return failures
@@ -310,7 +323,7 @@ def main() -> int:
     windows = caption_windows(captions)
     entries = caption_entries(captions)
     checks["captionCount"] = len(windows)
-    checks["captionLayoutEngine"] = "japanese-semantic-v2"
+    checks["captionLayoutEngine"] = plan.get("captionEngine") or "unknown"
     if not windows:
         failures.append("missing-captions")
     failures.extend(validate_caption_layout(entries))
