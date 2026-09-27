@@ -66,6 +66,7 @@ class CaptionCue:
     text: str
     display: str
     highlight: str | None
+    layout_variant: str
 
 
 def _clean(text: str) -> str:
@@ -239,13 +240,19 @@ def build_caption_cues(
                     text=unit,
                     display=display,
                     highlight=choose_highlight(unit),
+                    layout_variant=str(scene.get("layoutVariant") or "center"),
                 )
             )
             cursor = cue_end
     return cues
 
 
-def ass_entry_prefix() -> str:
+def ass_entry_prefix(layout_variant: str = "center") -> str:
+    if layout_variant == "fullscreen-card":
+        return (
+            r"{\an2\fs78\move(540,1160,540,1100,0,180)"
+            r"\fad(120,80)}"
+        )
     return (
         rf"{{\an2\move(540,{ENTRY_START_Y},540,{ENTRY_END_Y},0,180)"
         r"\fad(120,80)}"
@@ -268,7 +275,7 @@ def ass_text(
     accent_ass: str = DEFAULT_ACCENT_ASS,
 ) -> str:
     display = cue.display
-    prefix = ass_entry_prefix()
+    prefix = ass_entry_prefix(cue.layout_variant)
 
     if not cue.highlight or cue.highlight not in display.replace(r"\N", ""):
         return prefix + display
