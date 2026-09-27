@@ -272,9 +272,6 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "--lipsync-backend",
         str(job.get("lipsyncBackend") or "auto"),
     ]
-    if job.get("autoAudio") is False:
-        cmd.append("--no-auto-audio")
-
     bgm_asset = str(job.get("bgmAsset") or "").strip()
     if bgm_asset:
         bgm_path = resolve_bridge_asset(bridge, bgm_asset)
@@ -360,7 +357,7 @@ def process_render_job(job: dict, bridge: Path) -> dict:
         "captionEngine": plan.get("captionEngine"),
         "motionEngine": plan.get("motionEngine"),
         "audioDesign": plan.get("audioDesign"),
-        "autoAudio": job.get("autoAudio") is not False,
+        "syntheticAudio": False,
         "durationSeconds": round(wav_duration(narration_wav), 3),
         "motionBank": "production-if-complete-else-generated",
         "lipsyncBackend": str(job.get("lipsyncBackend") or "auto"),
