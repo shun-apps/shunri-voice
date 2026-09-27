@@ -702,3 +702,55 @@ APIキーはcurlのコマンドライン引数へ直接載せず、一時header 
 
 Gemini 3.8 TTSではpaceは speech_metadata.style で自然言語制御するため、約1.2xは演技指示であり厳密な再生倍率ではない。
 最終候補が決まった後、必要ならFFmpeg atempoで1.2x / 1.3xの厳密な比較を行う。
+
+
+## Phase 7 — parallel Remotion motion-graphics renderer
+
+既存FFmpeg rendererは残したまま、同じ `scene-plan.json` を読むRemotion rendererを追加する。
+
+目的:
+- motion graphicsをReact componentとして再利用する
+- 通常字幕 / HERO字幕 / 数字強調をcomponent化する
+- presenter layout / overlay card / camera motionをframe単位で制御する
+- 既存FFmpeg版と同じ入力からA/B比較できるようにする
+- BGM/SE方針はPhase 6.1のまま。Remotion導入を理由にsynthetic audioを復活させない
+
+実装はMac本体へNode/Remotionを直接入れず、Docker Linux内で行う。
+Remotion公式Docker推奨構成に合わせて `node:22-bookworm-slim`、Chrome依存library、Noto CJK、Chrome Headless Shellをimageへ含める。
+
+初回image build:
+
+    make remotion-renderer-setup
+
+既存の最新 `scene-plan.json` を自動検出してrender:
+
+    make remotion-poc
+
+work directoryを明示:
+
+    make remotion-poc WORK="$HOME/shunri-voice/outputs/reel-poc/.poc-work"
+
+瞬理の選択済みGemini音声など、別WAVを使ってrender:
+
+    make remotion-poc AUDIO="$HOME/shunri-voice/outputs/gemini-voice-speed-compare/02-shunri-warm-younger-b-1p2x.wav"
+
+`--audio` でWAVを差し替えた場合、scene timingは新しい音声尺へ比例補正して同じscene-planを使う。
+
+標準出力:
+
+    <work-dirの親>/shunri-reel-remotion.mp4
+
+Phase 7 PoCでcomponent化する演出:
+- PresenterScene: center / left-presenter / right-presenter / fullscreen-card
+- camera: slow-push / punch-in / drift-left / drift-right / micro-drift / cta-push
+- CaptionBeat: 18文字以内のmicro caption
+- HERO: ファーストビュー / 仕事が減らない / 仕事の流れ / 数字+単位
+- OverlayCard: screenshot / diagramのslide + fade + scale
+- scene edge: short crossfade
+- CTA: accent line
+
+重要:
+- Remotionは人物自体を生成したりlip-syncするengineではない
+- Motion Bank / external lip-sync adapterは従来どおり別layer
+- rendererの入力契約をscene-planに固定し、FFmpegとRemotionを並列維持する
+- production audioはnarration-onlyまたは承認済みBGM assetのみ
