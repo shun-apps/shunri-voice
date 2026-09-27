@@ -13,6 +13,8 @@ import wave
 from pathlib import Path
 
 from caption_timing import align_phrases
+from caption_layout import ass_text, build_caption_cues
+from reel_audio import generate_audio_tracks
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = ROOT / "config" / "reel_profile.json"
@@ -79,6 +81,11 @@ def parse_args() -> argparse.Namespace:
         "--bgm",
         type=Path,
         help="Optional BGM file. Narration remains master and BGM is auto-ducked.",
+    )
+    parser.add_argument(
+        "--no-auto-audio",
+        action="store_true",
+        help="Disable the built-in original ambient BGM / sparse SFX bed.",
     )
     parser.add_argument(
         "--skip-qa",
@@ -197,11 +204,22 @@ def assign_motion_variants(timeline: list[dict]) -> list[dict]:
     if not regular:
         regular = ["neutral-talk"]
 
+    camera_cycle = [
+        "slow-push",
+        "drift-left",
+        "punch-in",
+        "drift-right",
+        "slow-push",
+        "micro-drift",
+    ]
+
     for index, scene in enumerate(timeline):
         if scene.get("type") == "cta" and "cta-forward" in variants:
             scene["presenterVariant"] = "cta-forward"
+            scene["cameraMotion"] = "cta-push"
         else:
             scene["presenterVariant"] = regular[index % len(regular)]
+            scene["cameraMotion"] = camera_cycle[index % len(camera_cycle)]
     return timeline
 
 
@@ -282,6 +300,9 @@ def write_plan(path: Path, script: str, duration: float, timeline: list[dict]) -
         "voice": "shunri",
         "durationSeconds": round(duration, 3),
         "script": script,
+        "captionEngine": "japanese-semantic-v2",
+        "motionEngine": "editorial-camera-v1",
+        "audioDesign": "auto-editorial-v1",
         "scenes": timeline,
     }
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -303,10 +324,11 @@ Style: Default,Noto Sans CJK JP,66,&H00FFFFFF,&H000000FF,&H00111111,&H7A000000,-
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
 """
     lines = [header]
-    for scene in timeline:
-        start = ass_time(float(scene["start"]))
-        end = ass_time(float(scene["end"]))
-        caption = wrap_caption(str(scene["caption"]))
+    cues = build_caption_cues(timeline, max_unit_chars=30, max_line_chars=18)
+    for cue in cues:
+        start = ass_time(float(cue.start))
+        end = ass_time(float(cue.end))
+        caption = ass_text(cue)
         lines.append(f"Dialogue: 0,{start},{end},Default,,0,0,0,,{caption}\n")
     path.write_text("".join(lines), encoding="utf-8")
 
@@ -442,12 +464,50 @@ def extract_scene_audio(job_dir: Path, start: float, duration: float, output_nam
     return output
 
 
+def camera_motion_filter(name: str, scene_duration: float) -> str:
+    frames = max(1, int(scene_duration * 30))
+    center_x = "iw/2-(iw/zoom/2)"
+    center_y = "ih/2-(ih/zoom/2)"
+
+    if name == "punch-in":
+        zoom = "if(lt(on,12),1+0.004*on,1.048)"
+        x = center_x
+        y = center_y
+    elif name == "drift-left":
+        zoom = "1.035"
+        x = f"(iw-iw/zoom)*(0.72-0.44*on/{frames})"
+        y = center_y
+    elif name == "drift-right":
+        zoom = "1.035"
+        x = f"(iw-iw/zoom)*(0.28+0.44*on/{frames})"
+        y = center_y
+    elif name == "cta-push":
+        zoom = f"1+0.065*on/{frames}"
+        x = center_x
+        y = center_y
+    elif name == "slow-push":
+        zoom = f"1+0.045*on/{frames}"
+        x = center_x
+        y = center_y
+    else:
+        zoom = "1.025"
+        x = f"(iw-iw/zoom)*(0.48+0.04*sin(on/{max(1, frames // 3)}))"
+        y = center_y
+
+    return (
+        "zoompan="
+        f"z='{zoom}':x='{x}':y='{y}':"
+        "d=1:s=1080x1920:fps=30"
+    )
+
+
 def render_scene_visual(
     job_dir: Path,
     synced_name: str,
     final_name: str,
     scene_duration: float,
     overlay_name: str | None,
+    camera_motion: str,
 ) -> None:
     base = [
         "docker", "run", "--rm",
@@ -456,11 +516,19 @@ def render_scene_visual(
         "-y",
         "-i", f"/work/segments-synced/{synced_name}",
     ]
+    motion = camera_motion_filter(camera_motion, scene_duration)
 
     if overlay_name:
+        out_start = max(0.10, scene_duration - 0.24)
         filter_graph = (
-            "[1:v]scale=840:620:force_original_aspect_ratio=decrease[ov];"
-            "[0:v][ov]overlay=(W-w)/2:120[outv]"
+            f"[0:v]{motion}[base];"
+            "[1:v]scale=840:620:force_original_aspect_ratio=decrease,"
+            "pad=864:644:12:12:color=white,format=rgba,"
+            "fade=t=in:st=0:d=0.18:alpha=1,"
+            f"fade=t=out:st={out_start:.3f}:d=0.22:alpha=1[ov];"
+            "[base][ov]overlay=x=(W-w)/2:"
+            "y='if(lt(t,0.35),-h+(120+h)*(t/0.35),120)'"
+            ":shortest=1[outv]"
         )
         cmd = base + [
             "-loop", "1",
@@ -478,6 +546,7 @@ def render_scene_visual(
         ]
     else:
         cmd = base + [
+            "-vf", motion,
             "-t", f"{scene_duration:.3f}",
             "-an",
             "-r", "30",
@@ -554,6 +623,7 @@ def render_motion_track(job_dir: Path, timeline: list[dict], lipsync_backend: st
             final_name,
             scene_duration,
             str(scene.get("overlay")) if scene.get("overlay") else None,
+            str(scene.get("cameraMotion") or "micro-drift"),
         )
         concat_lines.append(f"file '{final_name}'")
 
@@ -584,11 +654,12 @@ def render_motion(
     timeline: list[dict],
     lipsync_backend: str,
     bgm_path: Path | None,
+    sfx_path: Path | None,
 ) -> None:
     copy_motion_bank(job_dir, timeline)
     render_motion_track(job_dir, timeline, lipsync_backend)
 
-    base = [
+    cmd = [
         "docker", "run", "--rm",
         "-v", f"{job_dir.resolve()}:/work",
         RENDER_IMAGE,
@@ -597,22 +668,49 @@ def render_motion(
         "-i", "/work/narration.wav",
     ]
 
+    bgm_index: int | None = None
+    sfx_index: int | None = None
+    next_index = 2
+
     if bgm_path is not None:
-        filter_graph = (
-            "[0:v]subtitles=/work/captions.ass:fontsdir=/usr/share/fonts/opentype/noto[vout];"
-            "[2:a]volume=0.14[bgm];"
-            "[bgm][1:a]sidechaincompress=threshold=0.015:ratio=10:attack=20:release=350[ducked];"
-            "[1:a][ducked]amix=inputs=2:normalize=0,alimiter=limit=0.95[aout]"
+        bgm_index = next_index
+        next_index += 1
+        cmd += ["-stream_loop", "-1", "-i", f"/work/{bgm_path.name}"]
+
+    if sfx_path is not None:
+        sfx_index = next_index
+        cmd += ["-i", f"/work/{sfx_path.name}"]
+
+    if bgm_index is not None or sfx_index is not None:
+        filters = [
+            "[0:v]subtitles=/work/captions.ass:fontsdir=/usr/share/fonts/opentype/noto[vout]"
+        ]
+        audio_inputs = ["[1:a]"]
+
+        if bgm_index is not None:
+            filters.append(
+                f"[{bgm_index}:a]volume=0.85[bgm];"
+                "[bgm][1:a]sidechaincompress="
+                "threshold=0.018:ratio=9:attack=20:release=380[ducked]"
+            )
+            audio_inputs.append("[ducked]")
+
+        if sfx_index is not None:
+            filters.append(f"[{sfx_index}:a]volume=0.48[sfx]")
+            audio_inputs.append("[sfx]")
+
+        filters.append(
+            "".join(audio_inputs)
+            + f"amix=inputs={len(audio_inputs)}:normalize=0,"
+            "alimiter=limit=0.90[aout]"
         )
-        cmd = base + [
-            "-stream_loop", "-1",
-            "-i", f"/work/{bgm_path.name}",
-            "-filter_complex", filter_graph,
+        cmd += [
+            "-filter_complex", ";".join(filters),
             "-map", "[vout]",
             "-map", "[aout]",
         ]
     else:
-        cmd = base + [
+        cmd += [
             "-vf", "subtitles=/work/captions.ass:fontsdir=/usr/share/fonts/opentype/noto",
             "-map", "0:v:0",
             "-map", "1:a:0",
@@ -689,7 +787,13 @@ def main() -> int:
     phrases = split_script(script)
     timeline = build_timeline(phrases, duration, narration_path)
     prepare_overlays(job_dir, timeline, args.overlay_dir)
-    bgm_path = prepare_bgm(job_dir, args.bgm)
+    external_bgm = prepare_bgm(job_dir, args.bgm)
+    auto_bgm: Path | None = None
+    auto_sfx: Path | None = None
+    if not args.no_auto_audio:
+        auto_bgm, auto_sfx = generate_audio_tracks(job_dir, duration, timeline)
+    bgm_path = external_bgm or auto_bgm
+    sfx_path = auto_sfx
     write_plan(plan_path, script, duration, timeline)
     write_ass(ass_path, timeline, width, height)
 
@@ -710,6 +814,7 @@ def main() -> int:
             timeline,
             args.lipsync_backend,
             bgm_path,
+            sfx_path,
         )
     shutil.copy2(temp_output, output)
 
@@ -749,7 +854,7 @@ def main() -> int:
     if args.static_presenter:
         print("注: --static-presenter のため旧静止画モードです。")
     else:
-        print("Phase-4: caption alignment / overlays / BGM ducking / QA まで有効です。")
+        print("Phase-6: semantic captions / editorial motion / animated overlays / BGM+SFX / QA が有効です。")
         if args.lipsync_backend == "auto":
             print("lip-sync: SHUNRI_LIPSYNC_COMMAND があればexternal、なければpassthroughです。")
         else:
