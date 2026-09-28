@@ -112,7 +112,7 @@ def resolve_scene(scene: dict, work_dir: Path, cfg: dict) -> dict:
     query = str(direction.get("assetQuery") or scene.get("caption") or "").strip()
 
     explicit = explicit_overlay(scene, work_dir, cfg)
-    if explicit and explicit["status"] == "resolved":
+    if explicit:
         if query:
             explicit["query"] = query
         item["assetResolution"] = explicit
