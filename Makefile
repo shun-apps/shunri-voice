@@ -50,7 +50,7 @@ reel-renderer-setup:
 	docker build -t shunri-reel-renderer:local docker/reel-renderer
 
 remotion-renderer-setup:
-	docker build -f docker/remotion-renderer/Dockerfile -t shunri-remotion-renderer:local .
+	$(PYTHON) scripts/render_remotion.py --build-only
 
 visual-director:
 	@test -n "$(PLAN)" || (echo '使い方: make visual-director PLAN="/path/to/scene-plan.json"' && exit 1)
