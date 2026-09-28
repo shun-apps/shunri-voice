@@ -42,8 +42,7 @@ Envelopeは原則:
 - idempotencyKey（必要な場合）
 - domain payload / artifact reference
 
-専用 `shunapps_platform` Repository作成までは、
-`shunapps_lp_v2/docs/platform/` と `shunapps_lp_v2/contracts/` をPlatform暫定正本とする。
+`shun-apps/shunapps_platform` をPlatform Governance / Common AGENTS / Common Contractsの唯一の正本とする。
 
 
 ## Creative Domain Canonical Responsibility
