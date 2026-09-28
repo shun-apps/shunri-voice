@@ -4,28 +4,11 @@ import type {Scene} from "../types";
 import {BrollVisual} from "./BrollVisual";
 import {ScreenshotVisual} from "./ScreenshotVisual";
 
-export const DirectedVisual: React.FC<{
+const GraphicVisual: React.FC<{
   scene: Scene;
   accentHex: string;
-  durationInFrames: number;
-}> = ({scene, accentHex, durationInFrames}) => {
+}> = ({scene, accentHex}) => {
   const direction = scene.visualDirection;
-  if (!direction || direction.visualType === "presenter" || direction.visualType === "cta") {
-    return null;
-  }
-
-  if (direction.visualType === "screenshot") {
-    return scene.resolvedAssetSrc ? (
-      <ScreenshotVisual scene={scene} durationInFrames={durationInFrames} />
-    ) : null;
-  }
-
-  if (direction.visualType === "b-roll") {
-    return scene.resolvedAssetSrc ? (
-      <BrollVisual scene={scene} durationInFrames={durationInFrames} />
-    ) : null;
-  }
-
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const pop = spring({
@@ -50,6 +33,8 @@ export const DirectedVisual: React.FC<{
     transform: `scale(${0.78 + 0.22 * pop})`,
     fontFamily: '"Noto Sans CJK JP", sans-serif',
   };
+
+  if (!direction) return null;
 
   if (direction.visualType === "symbol") {
     return (
@@ -141,4 +126,29 @@ export const DirectedVisual: React.FC<{
   }
 
   return null;
+};
+
+export const DirectedVisual: React.FC<{
+  scene: Scene;
+  accentHex: string;
+  durationInFrames: number;
+}> = ({scene, accentHex, durationInFrames}) => {
+  const direction = scene.visualDirection;
+  if (!direction || direction.visualType === "presenter" || direction.visualType === "cta") {
+    return null;
+  }
+
+  if (direction.visualType === "screenshot") {
+    return scene.resolvedAssetSrc ? (
+      <ScreenshotVisual scene={scene} durationInFrames={durationInFrames} />
+    ) : null;
+  }
+
+  if (direction.visualType === "b-roll") {
+    return scene.resolvedAssetSrc ? (
+      <BrollVisual scene={scene} durationInFrames={durationInFrames} />
+    ) : null;
+  }
+
+  return <GraphicVisual scene={scene} accentHex={accentHex} />;
 };
