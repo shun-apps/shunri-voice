@@ -6,6 +6,7 @@ import json
 import shutil
 import subprocess
 import wave
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -97,6 +98,12 @@ def motion_bank_source() -> Path:
     raise SystemExit("Motion Bank がありません。先に make motion-bank を実行してください。")
 
 
+def apply_visual_director(work_dir: Path, plan_path: Path) -> dict:
+    directed_path = work_dir / "visual-director-plan.json"
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "visual_director.py"), "--scene-plan", str(plan_path), "--output", str(directed_path)], check=True)
+    return json.loads(directed_path.read_text(encoding="utf-8"))
+
+
 def prepare_assets(work_dir: Path, plan: dict, audio_override: Path | None) -> tuple[dict, Path]:
     profile = json.loads(PROFILE.read_text(encoding="utf-8"))
     fps = int(profile["output"]["fps"])
@@ -153,6 +160,7 @@ def prepare_assets(work_dir: Path, plan: dict, audio_override: Path | None) -> t
                 "cameraMotion": str(scene.get("cameraMotion") or "micro-drift"),
                 "layoutVariant": str(scene.get("layoutVariant") or "center"),
                 "overlaySrc": overlay_src,
+                "visualDirection": scene.get("visualDirection"),
             }
         )
 
@@ -185,7 +193,7 @@ def main() -> int:
     if not plan_path.exists():
         raise SystemExit(f"scene-plan.json がありません: {plan_path}")
 
-    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    plan = apply_visual_director(work_dir, plan_path)
     props, props_path = prepare_assets(work_dir, plan, args.audio)
 
     output = (
