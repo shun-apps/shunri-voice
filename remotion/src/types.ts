@@ -9,6 +9,7 @@ export type Scene = {
   cameraMotion?: string;
   layoutVariant?: "center" | "left-presenter" | "right-presenter" | "fullscreen-card";
   overlaySrc?: string | null;
+  visualDirection?: {visualType: string; reason?: string; confidence?: number; symbol?: string};
 };
 
 export type ShunriReelProps = {
