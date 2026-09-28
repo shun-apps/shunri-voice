@@ -32,12 +32,27 @@ export const BrollVisual: React.FC<{
   const frame = useCurrentFrame();
   const progress =
     durationInFrames <= 1 ? 1 : Math.min(1, frame / (durationInFrames - 1));
-  const opacity = interpolate(
-    frame,
-    [0, Math.min(6, Math.max(1, durationInFrames - 1)), Math.max(0, durationInFrames - 6), durationInFrames],
-    [0, 1, 1, 0],
-    {extrapolateLeft: "clamp", extrapolateRight: "clamp"},
+  const fadeFrames = Math.max(
+    1,
+    Math.min(6, Math.floor(Math.max(3, durationInFrames) / 3)),
   );
+  const fadeIn =
+    durationInFrames <= 2
+      ? 1
+      : interpolate(frame, [0, fadeFrames], [0, 1], {
+          extrapolateLeft: "clamp",
+          extrapolateRight: "clamp",
+        });
+  const fadeOut =
+    durationInFrames <= 2
+      ? 1
+      : interpolate(
+          frame,
+          [Math.max(fadeFrames, durationInFrames - fadeFrames), durationInFrames],
+          [1, 0],
+          {extrapolateLeft: "clamp", extrapolateRight: "clamp"},
+        );
+  const opacity = Math.min(fadeIn, fadeOut);
 
   return (
     <AbsoluteFill
