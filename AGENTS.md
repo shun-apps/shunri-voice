@@ -111,3 +111,31 @@ ShunLP Platform内でCreative UIを提供する場合、V2 Design Systemへ統�
 
 Creative責務が安定した後、`shunri-voice` → `shunapps_creative` へ整理する。
 音声専用Repositoryという旧名称に引っ張られて責務を狭めない。
+
+
+## Pull Request / Merge Gate
+
+このRepositoryでもShunApps PlatformのCentralized Merge Controlを必須とする。
+正本: `shun-apps/shunapps_platform/AGENTS.md`
+
+標準フロー:
+
+```text
+実装
+→ test
+→ self review
+→ Pull Request作成
+→ STOP
+```
+
+開発Agentは禁止:
+- 自分のPRをmergeする
+- main / default branchへ直接pushする
+- merge前提の依存工程へ勝手に進む
+- production deployする
+
+PR作成後はPR番号 / URL / test結果 / 残リスク / dependencyを報告して停止する。
+merge待ちPRに依存しない別作業だけ、別branch / 別PRで継続してよい。
+
+mainへのMergeはPlatform Merge Controllerが一元管理する。
+Production DeployはProduct Ownerの明示承認が必要。
