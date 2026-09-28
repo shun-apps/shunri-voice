@@ -130,6 +130,30 @@ def split_script(text: str) -> list[str]:
     return phrases
 
 
+CTA_PATTERNS = (
+    "詳しく",
+    "プロフィール",
+    "リンクから",
+    "リンクを",
+    "チェックして",
+    "チェックしてください",
+    "申し込",
+    "相談して",
+    "相談はこちら",
+    "dmして",
+    "dmください",
+    "コメントして",
+    "保存して",
+    "フォローして",
+    "登録して",
+)
+
+
+def is_cta_phrase(text: str) -> bool:
+    normalized = text.strip().lower()
+    return any(pattern in normalized for pattern in CTA_PATTERNS)
+
+
 def ass_time(seconds: float) -> str:
     seconds = max(0.0, seconds)
     hours = int(seconds // 3600)
@@ -236,7 +260,7 @@ def build_timeline(phrases: list[str], duration: float, narration_path: Path) ->
         timeline.append(
             {
                 "id": f"s{index:02d}",
-                "type": "cta" if index == len(phrases) else "talk",
+                "type": "cta" if is_cta_phrase(phrase) else "talk",
                 "narration": phrase,
                 "caption": phrase,
                 "start": round(start, 3),

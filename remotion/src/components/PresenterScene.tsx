@@ -1,5 +1,5 @@
 import React from "react";
-import {AbsoluteFill, interpolate, staticFile, useCurrentFrame, useVideoConfig} from "remotion";
+import {AbsoluteFill, interpolate, staticFile, useCurrentFrame} from "remotion";
 import {Video} from "@remotion/media";
 import type {Scene} from "../types";
 import {OverlayCard} from "./OverlayCard";
@@ -26,19 +26,6 @@ export const PresenterScene: React.FC<{scene: Scene; durationInFrames: number}> 
   durationInFrames,
 }) => {
   const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
-  const fadeFrames = Math.max(4, Math.round(fps * 0.14));
-  const fadeIn = interpolate(frame, [0, fadeFrames], [0, 1], {
-    extrapolateLeft: "clamp",
-    extrapolateRight: "clamp",
-  });
-  const fadeOut = interpolate(
-    frame,
-    [Math.max(0, durationInFrames - fadeFrames), durationInFrames],
-    [1, 0],
-    {extrapolateLeft: "clamp", extrapolateRight: "clamp"},
-  );
-  const opacity = Math.min(fadeIn, fadeOut);
   const layout = scene.layoutVariant ?? "center";
   const transform = cameraTransform(scene.cameraMotion, frame, durationInFrames);
   const src = staticFile(scene.presenterSrc);
@@ -70,7 +57,7 @@ export const PresenterScene: React.FC<{scene: Scene; durationInFrames: number}> 
   );
 
   return (
-    <AbsoluteFill style={{backgroundColor: "#101010", opacity, overflow: "hidden"}}>
+    <AbsoluteFill style={{backgroundColor: "#101010", overflow: "hidden"}}>
       <Background />
       {layout !== "center" && layout !== "fullscreen-card" ? (
         <div

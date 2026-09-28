@@ -6,7 +6,7 @@ from pathlib import Path
 
 from caption_layout import ass_text, balanced_lines, build_caption_cues
 from qa_reel import caption_entries, validate_caption_layout, validate_caption_styling
-from reel_poc import camera_motion_filter, scene_visual_filter
+from reel_poc import camera_motion_filter, is_cta_phrase, scene_visual_filter
 
 
 def main() -> int:
@@ -16,6 +16,9 @@ def main() -> int:
 
     ai_line = balanced_lines("AIを使っているのに、なぜか仕事が減らない。")
     assert ai_line == r"AIを使っているのに、\Nなぜか仕事が減らない。", ai_line
+
+    assert not is_cta_phrase(final)
+    assert is_cta_phrase("詳しくはプロフィールのリンクからチェックしてください。")
 
     scenes = [
         {

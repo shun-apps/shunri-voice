@@ -31,10 +31,17 @@ def direct(plan:dict,cfg:dict)->dict:
         item=dict(scene)
         item["visualDirection"]=direction
         vt=direction["visualType"]
-        if vt in {"hero","symbol","card","comparison"}:
-            item["layoutVariant"]="fullscreen-card" if vt in {"card","comparison"} else "center"
-            item["cameraMotion"]="punch-in" if vt in {"hero","symbol"} else "slow-push"
+        if vt in {"card","comparison"}:
+            item["layoutVariant"]="fullscreen-card"
+            item["cameraMotion"]="slow-push"
+        elif vt=="hero":
+            item["layoutVariant"]="center"
+            item["cameraMotion"]="slow-push"
+        elif vt=="symbol":
+            item["layoutVariant"]="center"
+            item["cameraMotion"]="micro-drift"
         elif vt=="cta":
+            item["layoutVariant"]="center"
             item["cameraMotion"]="cta-push"
         scenes.append(item)
     return {"version":1,"source":"visual-director-rules-v1","durationSeconds":plan.get("durationSeconds"),"scenes":scenes}

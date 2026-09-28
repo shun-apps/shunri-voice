@@ -62,7 +62,8 @@ export const ShunriReel: React.FC<ShunriReelProps> = ({
           Math.round((scene.end - scene.start) * fps),
         );
         const visualType = scene.visualDirection?.visualType;
-        const hideDefaultCaptions = visualType === "hero" || visualType === "card";
+        const hideDefaultCaptions =
+          visualType === "hero" || visualType === "card" || visualType === "cta";
         return (
           <Sequence
             key={scene.id}
@@ -81,20 +82,6 @@ export const ShunriReel: React.FC<ShunriReelProps> = ({
                 caption={scene.caption}
                 accentHex={accentHex}
                 durationInFrames={durationInFrames}
-              />
-            ) : null}
-            {scene.type === "cta" ? (
-              <div
-                style={{
-                  position: "absolute",
-                  left: 130,
-                  right: 130,
-                  bottom: 120,
-                  height: 10,
-                  borderRadius: 999,
-                  background: accentHex,
-                  boxShadow: `0 0 32px ${accentHex}88`,
-                }}
               />
             ) : null}
           </Sequence>
