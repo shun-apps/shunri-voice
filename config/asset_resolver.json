@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "imageExtensions": [".png", ".jpg", ".jpeg", ".webp"],
+  "videoExtensions": [".mp4", ".mov", ".webm"],
+  "requiredKindsByVisualType": {
+    "screenshot": ["image"],
+    "b-roll": ["image", "video"]
+  },
+  "searchDirsByVisualType": {
+    "screenshot": ["overlays", "screenshots", "assets"],
+    "b-roll": ["broll", "assets", "overlays"]
+  },
+  "defaultSearchDirs": ["overlays", "assets"]
+}
