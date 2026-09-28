@@ -26,8 +26,11 @@ def main() -> int:
     assert "PresenterScene" in reel
     assert "Audio" in reel
     assert "hideDefaultCaptions" in reel
-    assert "isFirstScene={index === 0}" in reel
     assert "durationInFrames={durationInFrames}" in reel
+
+    presenter = (ROOT / "remotion" / "src" / "components" / "PresenterScene.tsx").read_text(encoding="utf-8")
+    assert "fadeIn" not in presenter
+    assert "fadeOut" not in presenter
 
     directed = (ROOT / "remotion" / "src" / "components" / "DirectedVisual.tsx").read_text(encoding="utf-8")
     assert "ScreenshotVisual" in directed
