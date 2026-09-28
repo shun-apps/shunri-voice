@@ -788,3 +788,10 @@ Asset Resolver v1は外部検索や画像生成を行わない。
     make asset-resolver PLAN="/path/to/visual-director-plan.json" WORK="/path/to/work-dir"
 
 通常の `make remotion-poc` では両layerを自動実行する。
+
+Rich directed visuals:
+- `screenshot` + resolved image/video → browser-like editorial frame + subtle UI push
+- `b-roll` + resolved image/video → full-bleed cover + slow pan/zoom
+- `hero` / `card` は専用visual自身が本文を表示するため、通常captionを重ねない
+- resolved assetが無い場合はpresenterを残し、render自体は止めない
+
