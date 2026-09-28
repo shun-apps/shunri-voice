@@ -24,6 +24,21 @@ def main() -> int:
     assert "CaptionBeat" in reel
     assert "PresenterScene" in reel
     assert "Audio" in reel
+    assert "hideDefaultCaptions" in reel
+    assert "durationInFrames={durationInFrames}" in reel
+
+    directed = (ROOT / "remotion" / "src" / "components" / "DirectedVisual.tsx").read_text(encoding="utf-8")
+    assert "ScreenshotVisual" in directed
+    assert "BrollVisual" in directed
+    assert "resolvedAssetSrc" in directed
+
+    screenshot = (ROOT / "remotion" / "src" / "components" / "ScreenshotVisual.tsx").read_text(encoding="utf-8")
+    assert "scene.resolvedAssetSrc" in screenshot
+    assert "objectFit=\"contain\"" in screenshot
+
+    broll = (ROOT / "remotion" / "src" / "components" / "BrollVisual.tsx").read_text(encoding="utf-8")
+    assert "scene.resolvedAssetSrc" in broll
+    assert "objectFit=\"cover\"" in broll
 
     print("remotion-self-test: OK")
     return 0
