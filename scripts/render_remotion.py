@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import shutil
 import subprocess
@@ -25,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--audio", type=Path)
     p.add_argument("--output", type=Path)
     p.add_argument("--skip-build", action="store_true")
+    p.add_argument("--build-only", action="store_true")
     p.add_argument("--dry-run", action="store_true")
     return p.parse_args()
 
@@ -65,21 +67,69 @@ def ensure_docker() -> None:
         raise SystemExit("Docker Desktop を起動してから再実行してください。")
 
 
+def remotion_source_fingerprint() -> str:
+    digest = hashlib.sha256()
+    paths = [
+        DOCKERFILE,
+        ROOT / "remotion" / "package.json",
+        ROOT / "remotion" / "tsconfig.json",
+        *sorted(
+            p
+            for p in (ROOT / "remotion" / "src").rglob("*")
+            if p.is_file()
+        ),
+    ]
+    for path in paths:
+        digest.update(path.relative_to(ROOT).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()[:20]
+
+
 def ensure_image(skip_build: bool) -> None:
     ensure_docker()
+    fingerprint = remotion_source_fingerprint()
     inspect = subprocess.run(
-        ["docker", "image", "inspect", IMAGE],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        [
+            "docker",
+            "image",
+            "inspect",
+            "--format",
+            '{{ index .Config.Labels "com.shunri.remotion.source-sha" }}',
+            IMAGE,
+        ],
+        capture_output=True,
+        text=True,
         check=False,
     )
-    if inspect.returncode == 0:
+    installed = inspect.stdout.strip() if inspect.returncode == 0 else ""
+
+    if installed == fingerprint:
         return
+
     if skip_build:
-        raise SystemExit(f"Docker image がありません: {IMAGE}")
-    print("Remotion renderer Docker image を初回構築します...")
+        if inspect.returncode != 0:
+            raise SystemExit(f"Docker image がありません: {IMAGE}")
+        raise SystemExit(
+            "Remotion Docker image が現在のsourceと一致しません。"
+            " --skip-build を外して再buildしてください。"
+        )
+
+    action = "初回構築" if inspect.returncode != 0 else "source変更を検知したため更新"
+    print(f"Remotion renderer Docker image を{action}します...")
     subprocess.run(
-        ["docker", "build", "-f", str(DOCKERFILE), "-t", IMAGE, str(ROOT)],
+        [
+            "docker",
+            "build",
+            "--build-arg",
+            f"SHUNRI_REMOTION_SOURCE_SHA={fingerprint}",
+            "-f",
+            str(DOCKERFILE),
+            "-t",
+            IMAGE,
+            str(ROOT),
+        ],
         check=True,
     )
 
@@ -225,6 +275,11 @@ def prepare_assets(work_dir: Path, plan: dict, audio_override: Path | None) -> t
 
 def main() -> int:
     args = parse_args()
+    if args.build_only:
+        ensure_image(False)
+        print("Remotion renderer Docker image is current.")
+        return 0
+
     work_dir = (
         args.work_dir.expanduser().resolve()
         if args.work_dir

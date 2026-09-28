@@ -1,5 +1,8 @@
 FROM node:22-bookworm-slim
 
+ARG SHUNRI_REMOTION_SOURCE_SHA=unknown
+LABEL com.shunri.remotion.source-sha="${SHUNRI_REMOTION_SOURCE_SHA}"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
   libnss3 \
   libdbus-1-3 \
