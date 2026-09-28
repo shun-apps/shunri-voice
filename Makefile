@@ -89,6 +89,7 @@ self-check:
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_reel.py
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_shunri_cli.py
 	$(PYTHON) scripts/self_test_remotion.py
+	PYTHONPATH=scripts $(PYTHON) scripts/self_test_visual_director.py
 
 clean:
 	rm -rf outputs
