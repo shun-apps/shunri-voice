@@ -26,12 +26,15 @@ def main() -> int:
     assert "PresenterScene" in reel
     assert "Audio" in reel
     assert "hideDefaultCaptions" in reel
+    assert "isFirstScene={index === 0}" in reel
     assert "durationInFrames={durationInFrames}" in reel
 
     directed = (ROOT / "remotion" / "src" / "components" / "DirectedVisual.tsx").read_text(encoding="utf-8")
     assert "ScreenshotVisual" in directed
     assert "BrollVisual" in directed
     assert "resolvedAssetSrc" in directed
+    assert "SemanticUiVisual" in directed
+    assert "NEXT ACTION" in directed
 
     screenshot = (ROOT / "remotion" / "src" / "components" / "ScreenshotVisual.tsx").read_text(encoding="utf-8")
     assert "scene.resolvedAssetSrc" in screenshot
@@ -40,6 +43,10 @@ def main() -> int:
     broll = (ROOT / "remotion" / "src" / "components" / "BrollVisual.tsx").read_text(encoding="utf-8")
     assert "scene.resolvedAssetSrc" in broll
     assert "objectFit=\"cover\"" in broll
+
+    fallback = (ROOT / "remotion" / "src" / "components" / "SemanticUiVisual.tsx").read_text(encoding="utf-8")
+    assert "CANVA" in fallback
+    assert "APP / UI" in fallback
 
     renderer = (ROOT / "scripts" / "render_remotion.py").read_text(encoding="utf-8")
     assert "remotion_source_fingerprint" in renderer
