@@ -55,7 +55,7 @@ export const ShunriReel: React.FC<ShunriReelProps> = ({
   return (
     <AbsoluteFill style={{backgroundColor: "#0b0b0b"}}>
       <Audio src={staticFile(audioSrc)} />
-      {scenes.map((scene, index) => {
+      {scenes.map((scene) => {
         const from = Math.max(0, Math.round(scene.start * fps));
         const durationInFrames = Math.max(
           1,
@@ -71,11 +71,7 @@ export const ShunriReel: React.FC<ShunriReelProps> = ({
             from={from}
             durationInFrames={durationInFrames}
           >
-            <PresenterScene
-              scene={scene}
-              durationInFrames={durationInFrames}
-              isFirstScene={index === 0}
-            />
+            <PresenterScene scene={scene} durationInFrames={durationInFrames} />
             <DirectedVisual
               scene={scene}
               accentHex={accentHex}
