@@ -42,6 +42,10 @@ export const PresenterScene: React.FC<{scene: Scene; durationInFrames: number}> 
   const layout = scene.layoutVariant ?? "center";
   const transform = cameraTransform(scene.cameraMotion, frame, durationInFrames);
   const src = staticFile(scene.presenterSrc);
+  const directedVisualType = scene.visualDirection?.visualType;
+  const directedAssetOwnsOverlay =
+    Boolean(scene.resolvedAssetSrc) &&
+    (directedVisualType === "screenshot" || directedVisualType === "b-roll");
 
   const Background = () => (
     <Video
@@ -102,7 +106,7 @@ export const PresenterScene: React.FC<{scene: Scene; durationInFrames: number}> 
           }}
         />
       ) : null}
-      {scene.overlaySrc ? (
+      {scene.overlaySrc && !directedAssetOwnsOverlay ? (
         <OverlayCard src={scene.overlaySrc} fullscreen={layout === "fullscreen-card"} />
       ) : null}
     </AbsoluteFill>
