@@ -50,6 +50,12 @@ with TemporaryDirectory() as tmp:
                 "caption": "通常説明",
                 "visualDirection": {"visualType": "presenter"},
             },
+            {
+                "id": "s05",
+                "caption": "明示素材が欠けている",
+                "overlay": "s05.png",
+                "visualDirection": {"visualType": "presenter"},
+            },
         ],
     }
 
@@ -68,9 +74,11 @@ with TemporaryDirectory() as tmp:
     assert scenes[2]["assetResolution"]["requiredKinds"] == ["image"]
 
     assert scenes[3]["assetResolution"]["status"] == "not-required"
+    assert scenes[4]["assetResolution"]["status"] == "missing"
+    assert scenes[4]["assetResolution"]["reason"] == "explicit-overlay-not-found"
     assert out["assetResolver"]["counts"] == {
         "resolved": 2,
-        "missing": 1,
+        "missing": 2,
         "not-required": 1,
     }
 
