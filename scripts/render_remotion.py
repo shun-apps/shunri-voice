@@ -98,10 +98,39 @@ def motion_bank_source() -> Path:
     raise SystemExit("Motion Bank がありません。先に make motion-bank を実行してください。")
 
 
-def apply_visual_director(work_dir: Path, plan_path: Path) -> dict:
+def apply_visual_director(work_dir: Path, plan_path: Path) -> Path:
     directed_path = work_dir / "visual-director-plan.json"
-    subprocess.run([sys.executable, str(ROOT / "scripts" / "visual_director.py"), "--scene-plan", str(plan_path), "--output", str(directed_path)], check=True)
-    return json.loads(directed_path.read_text(encoding="utf-8"))
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "visual_director.py"),
+            "--scene-plan",
+            str(plan_path),
+            "--output",
+            str(directed_path),
+        ],
+        check=True,
+    )
+    return directed_path
+
+
+def apply_asset_resolver(work_dir: Path, plan_path: Path) -> dict:
+    directed_path = apply_visual_director(work_dir, plan_path)
+    resolved_path = work_dir / "asset-resolver-plan.json"
+    subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "scripts" / "asset_resolver.py"),
+            "--scene-plan",
+            str(directed_path),
+            "--work-dir",
+            str(work_dir),
+            "--output",
+            str(resolved_path),
+        ],
+        check=True,
+    )
+    return json.loads(resolved_path.read_text(encoding="utf-8"))
 
 
 def prepare_assets(work_dir: Path, plan: dict, audio_override: Path | None) -> tuple[dict, Path]:
@@ -148,6 +177,16 @@ def prepare_assets(work_dir: Path, plan: dict, audio_override: Path | None) -> t
             if candidate.exists():
                 overlay_src = f"input/overlays/{candidate.name}"
 
+        asset_resolution = scene.get("assetResolution")
+        resolved_asset_src = None
+        if (
+            isinstance(asset_resolution, dict)
+            and asset_resolution.get("status") == "resolved"
+        ):
+            relative_asset = str(asset_resolution.get("relativePath") or "").strip()
+            if relative_asset and ".." not in Path(relative_asset).parts:
+                resolved_asset_src = f"input/{relative_asset.lstrip('/')}"
+
         scenes.append(
             {
                 "id": str(scene.get("id") or f"s{len(scenes)+1:02d}"),
@@ -161,6 +200,8 @@ def prepare_assets(work_dir: Path, plan: dict, audio_override: Path | None) -> t
                 "layoutVariant": str(scene.get("layoutVariant") or "center"),
                 "overlaySrc": overlay_src,
                 "visualDirection": scene.get("visualDirection"),
+                "assetResolution": asset_resolution,
+                "resolvedAssetSrc": resolved_asset_src,
             }
         )
 
@@ -193,7 +234,7 @@ def main() -> int:
     if not plan_path.exists():
         raise SystemExit(f"scene-plan.json がありません: {plan_path}")
 
-    plan = apply_visual_director(work_dir, plan_path)
+    plan = apply_asset_resolver(work_dir, plan_path)
     props, props_path = prepare_assets(work_dir, plan, args.audio)
 
     output = (
