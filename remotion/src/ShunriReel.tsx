@@ -4,6 +4,7 @@ import {Audio} from "@remotion/media";
 import type {ShunriReelProps} from "./types";
 import {PresenterScene} from "./components/PresenterScene";
 import {buildCaptionBeats, CaptionBeat, isHeroBeat} from "./components/Caption";
+import {DirectedVisual} from "./components/DirectedVisual";
 
 const SceneCaptions: React.FC<{
   caption: string;
@@ -68,6 +69,7 @@ export const ShunriReel: React.FC<ShunriReelProps> = ({
             durationInFrames={durationInFrames}
           >
             <PresenterScene scene={scene} durationInFrames={durationInFrames} />
+            <DirectedVisual scene={scene} accentHex={accentHex} />
             <SceneCaptions
               caption={scene.caption}
               accentHex={accentHex}
