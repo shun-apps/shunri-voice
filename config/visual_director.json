@@ -7,7 +7,7 @@
     {"id":"comparison","visualType":"comparison","keywords":["比較","違い","一方","対して","before","after","ビフォー","アフター"]},
     {"id":"symbol-ng","visualType":"symbol","symbol":"×","keywords":["ダメ","NG","間違","失敗","できない","減らない","変わっていない","問題"]},
     {"id":"symbol-ok","visualType":"symbol","symbol":"○","keywords":["OK","正解","成功","できる","改善","解決"]},
-    {"id":"screenshot","visualType":"screenshot","keywords":["画面","スクショ","ChatGPT","アプリ","ツール","サイト","UI","設定"]},
+    {"id":"screenshot","visualType":"screenshot","keywords":["画面","スクショ","ChatGPT","Canva","Figma","Notion","ブラウザ","アプリ","ツール","サイト","UI","設定","ダッシュボード"]},
     {"id":"hero","visualType":"hero","keywords":["重要","ポイント","結論","実は","なぜ","理由","AI"]},
     {"id":"card","visualType":"card","keywords":["3つ","３つ","方法","ステップ","流れ","仕組み"]},
     {"id":"b-roll","visualType":"b-roll","keywords":["例えば","イメージ","現場","作業","仕事"]}
