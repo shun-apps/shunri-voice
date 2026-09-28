@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: setup voices voice reference shunri gemini-voice-candidates gemini-voice-younger-candidates gemini-voice-speed-compare install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup remotion-renderer-setup remotion-poc visual-director motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
+.PHONY: setup voices voice reference shunri gemini-voice-candidates gemini-voice-younger-candidates gemini-voice-speed-compare install-cli uninstall-cli worker-once install-reel-worker uninstall-reel-worker worker-status reel-renderer-setup remotion-renderer-setup remotion-poc visual-director asset-resolver motion-bank import-motion-bank reel reel-poc reel-poc-lipsync quicktime-copy self-check clean
 
 setup:
 	bash scripts/bootstrap.sh
@@ -56,6 +56,10 @@ visual-director:
 	@test -n "$(PLAN)" || (echo '使い方: make visual-director PLAN="/path/to/scene-plan.json"' && exit 1)
 	$(PYTHON) scripts/visual_director.py --scene-plan "$(PLAN)"
 
+asset-resolver:
+	@test -n "$(PLAN)" || (echo '使い方: make asset-resolver PLAN="/path/to/visual-director-plan.json" [WORK="/path/to/work-dir"]' && exit 1)
+	$(PYTHON) scripts/asset_resolver.py --scene-plan "$(PLAN)" $(if $(WORK),--work-dir "$(WORK)",)
+
 remotion-poc:
 	$(PYTHON) scripts/render_remotion.py $(if $(WORK),--work-dir "$(WORK)",) $(if $(AUDIO),--audio "$(AUDIO)",) $(if $(OUTPUT),--output "$(OUTPUT)",)
 
@@ -85,11 +89,12 @@ quicktime-copy:
 
 self-check:
 	$(PYTHON) -m py_compile scripts/*.py
-	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); json.load(open("config/gemini_voice_candidates.json")); json.load(open("config/gemini_voice_younger_candidates.json")); json.load(open("config/shunri_voice_profile.json")); json.load(open("config/visual_director.json")); print("config-check: OK")'
+	$(PYTHON) -c 'import json; json.load(open("config/reel_profile.json")); json.load(open("config/motion_bank.json")); json.load(open("config/lipsync.json")); json.load(open("config/gemini_voice_candidates.json")); json.load(open("config/gemini_voice_younger_candidates.json")); json.load(open("config/shunri_voice_profile.json")); json.load(open("config/visual_director.json")); json.load(open("config/asset_resolver.json")); print("config-check: OK")'
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_reel.py
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_shunri_cli.py
 	$(PYTHON) scripts/self_test_remotion.py
 	PYTHONPATH=scripts $(PYTHON) scripts/self_test_visual_director.py
+	PYTHONPATH=scripts $(PYTHON) scripts/self_test_asset_resolver.py
 
 clean:
 	rm -rf outputs

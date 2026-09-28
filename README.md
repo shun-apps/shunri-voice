@@ -754,3 +754,37 @@ Phase 7 PoCでcomponent化する演出:
 - Motion Bank / external lip-sync adapterは従来どおり別layer
 - rendererの入力契約をscene-planに固定し、FFmpegとRemotionを並列維持する
 - production audioはnarration-onlyまたは承認済みBGM assetのみ
+
+
+## Phase 8 — Visual Director / Asset Resolver
+
+Remotionの前に、台本の意味から「何を見せるか」を決めるVisual Directorと、
+その指示をローカル素材へ結びつけるAsset Resolverを置く。
+
+処理順:
+
+    scene-plan.json
+      → visual-director-plan.json
+      → asset-resolver-plan.json
+      → remotion-props.json
+      → Remotion
+
+Asset Resolver v1は外部検索や画像生成を行わない。
+まず既存の承認済み素材を決定論的に解決する。
+
+優先:
+- sceneの明示 `overlay`
+- `screenshot`: `overlays/` → `screenshots/` → `assets/`
+- `b-roll`: `broll/` → `assets/` → `overlays/`
+- scene idと同名の `s01.png` / `s02.mp4` 形式
+
+素材が必要なのに見つからないsceneは失敗終了させず、
+`assetResolution.status=missing` として記録する。
+これにより後続で、画像生成・UI capture・media bankを同じcontractへ追加できる。
+
+単体確認:
+
+    make visual-director PLAN="/path/to/scene-plan.json"
+    make asset-resolver PLAN="/path/to/visual-director-plan.json" WORK="/path/to/work-dir"
+
+通常の `make remotion-poc` では両layerを自動実行する。
